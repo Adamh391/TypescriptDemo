@@ -127,12 +127,13 @@ async function handleSubmit() {
 <template>
   <div>
     <form @submit.prevent="handleSubmit">
-      <fieldset role="group">
+      <div :style="{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }">
         <input
           type="text"
           v-model="nameValue"
           placeholder="Enter name (optional)"
           :disabled="loading"
+          style="width: 100%"
         />
         <input
           type="email"
@@ -140,11 +141,12 @@ async function handleSubmit() {
           placeholder="Enter email address"
           required
           :disabled="loading"
+          style="width: 100%"
         />
         <button type="submit" :aria-busy="loading" :disabled="loading">
           {{ loading ? "Validating…" : "Validate" }}
         </button>
-      </fieldset>
+      </div>
     </form>
 
     <p v-if="error" style="color: #ff4136">{{ error }}</p>

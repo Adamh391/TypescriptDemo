@@ -68,6 +68,8 @@ export default function PredictiveAddressPage() {
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
   const [countries, setCountries] = useState<SupportedCountry[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("GB");
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(predictiveAddressSessionId);
   const activeSearchController = useRef<AbortController | null>(null);
 
@@ -122,6 +124,31 @@ export default function PredictiveAddressPage() {
     predictiveAddressSessionId = null;
     setOptions([]);
     setSelected(null);
+    setLocationError(null);
+  }
+
+  function handleUseCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latitude = position.coords.latitude.toFixed(6);
+        const longitude = position.coords.longitude.toFixed(6);
+        setAddress(`${latitude}, ${longitude}`);
+        setSelected(null);
+        setIsLocating(false);
+      },
+      (error) => {
+        setLocationError(error.message || "Unable to retrieve your location.");
+        setIsLocating(false);
+      }
+    );
   }
 
   async function handleSelect(option: SearchResults[number]) {
@@ -138,6 +165,7 @@ export default function PredictiveAddressPage() {
 
   const raw = selected?.Result?.RawAddress;
   const formattedLines = selected?.Result?.Address?.Lines ?? [];
+  const selectedCountryDetails = countries.find((country) => country.ISO2 === selectedCountry);
 
   return (
     <div>
@@ -154,8 +182,20 @@ export default function PredictiveAddressPage() {
             </option>
           ))}
         </select>
+        {selectedCountryDetails?.SupportsGeocoding && (
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={isLocating}
+            style={{ width: "100%", marginBottom: "0.5rem" }}
+          >
+            {isLocating ? "Getting current location..." : "Use Current Location"}
+          </button>
+        )}
+        {locationError && <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.5rem" }}>{locationError}</p>}
         <input
           placeholder="Enter Address"
+          value={address}
           onChange={(e) => setAddress(e.target.value)}
           style={{ marginBottom: 0, boxShadow: "none", borderRadius: options.length > 0 ? "4px 4px 0 0" : undefined }}
         />
@@ -206,6 +246,7 @@ export default function PredictiveAddressPage() {
           </ul>
         )}
       </div>
+      <div aria-hidden="true" style={{ margin: "1rem 0", borderTop: "2px solid #d1d5db" }} />
       <input disabled placeholder="Organisation" value={raw?.Organisation ?? ""} style={{ marginTop: "1rem" }} />
       <input disabled placeholder="Address Line 1" value={formattedLines[0] ?? ""} />
       <input disabled placeholder="Address Line 2" value={formattedLines[1] ?? ""} />

@@ -156,13 +156,14 @@ export default function EmailValidationPage() {
   return (
     <div>
       <form onSubmit={handleSubmit}>
-        <fieldset role="group">
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <input
             type="text"
             value={nameValue}
             onChange={(e) => setNameValue(e.target.value)}
             placeholder="Enter name (optional)"
             disabled={loading}
+            style={{ width: "100%" }}
           />
           <input
             type="email"
@@ -171,11 +172,12 @@ export default function EmailValidationPage() {
             placeholder="Enter email address"
             required
             disabled={loading}
+            style={{ width: "100%" }}
           />
           <button type="submit" aria-busy={loading} disabled={loading}>
             {loading ? "Validating…" : "Validate"}
           </button>
-        </fieldset>
+        </div>
       </form>
 
       {error && <p style={{ color: "#ff4136" }}>{error}</p>}

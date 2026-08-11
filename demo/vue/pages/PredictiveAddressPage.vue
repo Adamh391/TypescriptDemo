@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import createClient from "openapi-fetch";
 import { PredictiveAddress } from "@data8/types";
 
@@ -20,7 +20,10 @@ const options = ref<SearchResults>([]);
 const selected = ref<RetrieveResult | null>(null);
 const countries = ref<SupportedCountry[]>([]);
 const selectedCountry = ref("GB");
+const isLocating = ref(false);
+const locationError = ref<string | null>(null);
 const sessionId = ref<string | null>(predictiveAddressSessionId);
+const selectedCountryDetails = computed(() => countries.value.find((country) => country.ISO2 === selectedCountry.value));
 
 async function getSupportedCountries() {
   const { data } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
@@ -89,6 +92,31 @@ onMounted(async () => {
 
 function handleCountryChange(country: string) {
   selectedCountry.value = country;
+  locationError.value = null;
+}
+
+function handleUseCurrentLocation() {
+  if (!navigator.geolocation) {
+    locationError.value = "Geolocation is not supported by this browser.";
+    return;
+  }
+
+  isLocating.value = true;
+  locationError.value = null;
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latitude = position.coords.latitude.toFixed(6);
+      const longitude = position.coords.longitude.toFixed(6);
+      address.value = `${latitude}, ${longitude}`;
+      selected.value = null;
+      isLocating.value = false;
+    },
+    (error) => {
+      locationError.value = error.message || "Unable to retrieve your location.";
+      isLocating.value = false;
+    }
+  );
 }
 
 watch([address, selectedCountry], async ([val, country], _, onCleanup) => {
@@ -129,6 +157,7 @@ watch(selectedCountry, () => {
   predictiveAddressSessionId = null;
   options.value = [];
   selected.value = null;
+  locationError.value = null;
 });
 
 async function handleSelect(option: SearchResults[number]) {
@@ -168,9 +197,19 @@ watch(selected, (val) => {
           {{ country.Name }} ({{ country.ISO2 }})
         </option>
       </select>
+      <button
+        v-if="selectedCountryDetails?.SupportsGeocoding"
+        type="button"
+        @click="handleUseCurrentLocation"
+        :disabled="isLocating"
+        :style="{ width: '100%', marginBottom: '0.5rem' }"
+      >
+        {{ isLocating ? "Getting current location..." : "Use Current Location" }}
+      </button>
+      <p v-if="locationError" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ locationError }}</p>
       <input
         placeholder="Enter Address"
-        @input="address = ($event.target as HTMLInputElement).value"
+        v-model="address"
         :style="{ marginBottom: 0, boxShadow: 'none', borderRadius: options.length > 0 ? '4px 4px 0 0' : undefined }"
       />
       <ul
@@ -219,6 +258,7 @@ watch(selected, (val) => {
         </li>
       </ul>
     </div>
+    <div aria-hidden="true" :style="{ margin: '1rem 0', borderTop: '2px solid #d1d5db' }" />
     <input disabled placeholder="Organisation" :value="raw?.RawAddress?.Organisation ?? ''" style="margin-top: 1rem" />
     <input disabled placeholder="Address Line 1" :value="formattedLines[0] ?? ''" />
     <input disabled placeholder="Address Line 2" :value="formattedLines[1] ?? ''" />
