@@ -16,6 +16,7 @@ let predictiveAddressSessionId: string | null = null;
 let activeSearchAbortController: AbortController | null = null;
 
 const address = ref("");
+const searchQuery = ref<string | null>(null);
 const options = ref<SearchResults>([]);
 const selected = ref<RetrieveResult | null>(null);
 const countries = ref<SupportedCountry[]>([]);
@@ -119,10 +120,12 @@ function handleUseCurrentLocation() {
   );
 }
 
-watch([address, selectedCountry], async ([val, country], _, onCleanup) => {
+watch([address, searchQuery, selectedCountry], async ([val, query, country], _, onCleanup) => {
   activeSearchAbortController?.abort();
 
-  if (val.length == 0) {
+  const activeQuery = query ?? val;
+
+  if (activeQuery.length == 0) {
     options.value = [];
     return;
   }
@@ -138,7 +141,7 @@ watch([address, selectedCountry], async ([val, country], _, onCleanup) => {
   });
 
   try {
-    const res = await search(val, country, sessionId.value, controller.signal);
+    const res = await search(activeQuery, country, sessionId.value, controller.signal);
     if (controller.signal.aborted) return;
     updateSessionId(res?.SessionID);
     options.value = res?.Results ?? [];
@@ -158,6 +161,7 @@ watch(selectedCountry, () => {
   options.value = [];
   selected.value = null;
   locationError.value = null;
+  searchQuery.value = null;
 });
 
 async function handleSelect(option: SearchResults[number]) {
@@ -197,21 +201,33 @@ watch(selected, (val) => {
           {{ country.Name }} ({{ country.ISO2 }})
         </option>
       </select>
+      <input
+        placeholder="Enter Address"
+        v-model="address"
+        @input="searchQuery = null"
+        :style="{ marginBottom: 0, boxShadow: 'none', borderRadius: options.length > 0 ? '4px 4px 0 0' : undefined }"
+      />
+      <p v-if="selectedCountryDetails?.SupportsGeocoding" :style="{ margin: '0.35rem 0 0.25rem', color: '#6b7280', fontSize: '0.875rem' }">Or use your current location:</p>
       <button
         v-if="selectedCountryDetails?.SupportsGeocoding"
         type="button"
         @click="handleUseCurrentLocation"
         :disabled="isLocating"
-        :style="{ width: '100%', marginBottom: '0.5rem' }"
+        :style="{
+          width: 'auto',
+          alignSelf: 'flex-start',
+          marginBottom: '0.5rem',
+          padding: '0.35rem 0.65rem',
+          fontSize: '0.875rem',
+          background: 'transparent',
+          color: '#1f2937',
+          border: '1px solid #cbd5e1',
+          boxShadow: 'none',
+        }"
       >
         {{ isLocating ? "Getting current location..." : "Use Current Location" }}
       </button>
       <p v-if="locationError" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ locationError }}</p>
-      <input
-        placeholder="Enter Address"
-        v-model="address"
-        :style="{ marginBottom: 0, boxShadow: 'none', borderRadius: options.length > 0 ? '4px 4px 0 0' : undefined }"
-      />
       <ul
         v-if="options.length > 0"
         :style="{ margin: 0, padding: 0, listStyle: 'none', border: '1px solid #ccc', borderTop: 'none', borderRadius: '0 0 4px 4px', background: '#fff', maxHeight: '250px', overflowY: 'scroll' }"

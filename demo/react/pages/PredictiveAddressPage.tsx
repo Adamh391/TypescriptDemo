@@ -64,6 +64,7 @@ async function retrieve(id: string, country: string) {
 
 export default function PredictiveAddressPage() {
   const [address, setAddress] = useState("");
+  const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [options, setOptions] = useState<SearchResults>([]);
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
   const [countries, setCountries] = useState<SupportedCountry[]>([]);
@@ -94,7 +95,9 @@ export default function PredictiveAddressPage() {
   useEffect(() => {
     activeSearchController.current?.abort();
 
-    if (address.length == 0) {
+    const query = searchQuery ?? address;
+
+    if (query.length == 0) {
       setOptions([]);
       return;
     }
@@ -102,7 +105,7 @@ export default function PredictiveAddressPage() {
     const controller = new AbortController();
     activeSearchController.current = controller;
 
-    search(address, selectedCountry, sessionId, controller.signal)
+    search(query, selectedCountry, sessionId, controller.signal)
       .then((res) => {
         if (controller.signal.aborted) return;
         updateSessionId(res?.SessionID);
@@ -116,7 +119,7 @@ export default function PredictiveAddressPage() {
     return () => {
       controller.abort();
     };
-  }, [address, selectedCountry]);
+  }, [address, searchQuery, selectedCountry]);
 
   function handleCountryChange(country: string) {
     setSelectedCountry(country);
@@ -125,6 +128,7 @@ export default function PredictiveAddressPage() {
     setOptions([]);
     setSelected(null);
     setLocationError(null);
+    setSearchQuery(null);
   }
 
   function handleUseCurrentLocation() {
@@ -140,7 +144,7 @@ export default function PredictiveAddressPage() {
       (position) => {
         const latitude = position.coords.latitude.toFixed(6);
         const longitude = position.coords.longitude.toFixed(6);
-        setAddress(`${latitude}, ${longitude}`);
+        setSearchQuery(`${latitude}, ${longitude}`);
         setSelected(null);
         setIsLocating(false);
       },
@@ -182,23 +186,37 @@ export default function PredictiveAddressPage() {
             </option>
           ))}
         </select>
+        <input
+          placeholder="Enter Address"
+          value={address}
+          onChange={(e) => {
+            setAddress(e.target.value);
+            setSearchQuery(null);
+          }}
+          style={{ marginBottom: 0, boxShadow: "none", borderRadius: options.length > 0 ? "4px 4px 0 0" : undefined }}
+        />
+        {selectedCountryDetails?.SupportsGeocoding && <p style={{ margin: "0.35rem 0 0.25rem", color: "#6b7280", fontSize: "0.875rem" }}>Or use your current location:</p>}
         {selectedCountryDetails?.SupportsGeocoding && (
           <button
             type="button"
             onClick={handleUseCurrentLocation}
             disabled={isLocating}
-            style={{ width: "100%", marginBottom: "0.5rem" }}
+            style={{
+              width: "auto",
+              alignSelf: "flex-start",
+              marginBottom: "0.5rem",
+              padding: "0.35rem 0.65rem",
+              fontSize: "0.875rem",
+              background: "transparent",
+              color: "#1f2937",
+              border: "1px solid #cbd5e1",
+              boxShadow: "none",
+            }}
           >
             {isLocating ? "Getting current location..." : "Use Current Location"}
           </button>
         )}
         {locationError && <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.5rem" }}>{locationError}</p>}
-        <input
-          placeholder="Enter Address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          style={{ marginBottom: 0, boxShadow: "none", borderRadius: options.length > 0 ? "4px 4px 0 0" : undefined }}
-        />
         {options.length > 0 && (
           <ul style={{ margin: 0, padding: 0, listStyle: "none", border: "1px solid #ccc", borderTop: "none", borderRadius: "0 0 4px 4px", background: "#fff", maxHeight: "250px", overflowY: "scroll" }}>
             {options.map((option, i) => (
