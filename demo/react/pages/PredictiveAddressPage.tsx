@@ -10,11 +10,17 @@ const client = createClient<PredictiveAddress.paths>({
 
 type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["PredictiveAddressSearchResponse"]["Results"]>;
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
+let predictiveAddressSessionId: string | null = null;
 
-async function search(address: string) {
+async function search(address: string, sessionId: string | null) {
   const { data } = await client.POST("/PredictiveAddress/Search.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, search: address, country: "GB" },
+    body: {
+      username: "apikey-" + API_KEY,
+      search: address,
+      country: "GB",
+      session: sessionId ?? undefined,
+    },
   });
   return data;
 }
@@ -39,15 +45,26 @@ export default function PredictiveAddressPage() {
   const [address, setAddress] = useState("");
   const [options, setOptions] = useState<SearchResults>([]);
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(predictiveAddressSessionId);
+
+  function updateSessionId(nextSessionId: string | null | undefined) {
+    if (!nextSessionId) return;
+    setSessionId(nextSessionId);
+    predictiveAddressSessionId = nextSessionId;
+  }
 
   useEffect(() => {
     if (address.length == 0) { setOptions([]); return; }
-    search(address).then((res) => setOptions(res?.Results ?? []));
+    search(address, sessionId).then((res) => {
+      updateSessionId(res?.SessionID);
+      setOptions(res?.Results ?? []);
+    });
   }, [address]);
 
   async function handleSelect(option: SearchResults[number]) {
     if (option.container) {
       const res = await drilldown(option.value ?? "");
+      updateSessionId(res?.SessionID);
       setOptions(res?.Results ?? []);
     } else {
       const res = await retrieve(option.value ?? "");

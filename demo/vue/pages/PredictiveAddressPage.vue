@@ -11,15 +11,28 @@ const client = createClient<PredictiveAddress.paths>({
 
 type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["PredictiveAddressSearchResponse"]["Results"]>;
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
+let predictiveAddressSessionId: string | null = null;
 
 const address = ref("");
 const options = ref<SearchResults>([]);
 const selected = ref<RetrieveResult | null>(null);
+const sessionId = ref<string | null>(predictiveAddressSessionId);
 
-async function search(query: string) {
+function updateSessionId(nextSessionId: string | null | undefined) {
+  if (!nextSessionId) return;
+  sessionId.value = nextSessionId;
+  predictiveAddressSessionId = nextSessionId;
+}
+
+async function search(query: string, activeSessionId: string | null) {
   const { data } = await client.POST("/PredictiveAddress/Search.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, country: "GB", search: query },
+    body: {
+      username: "apikey-" + API_KEY,
+      country: "GB",
+      search: query,
+      session: activeSessionId ?? undefined,
+    },
   });
   return data;
 }
@@ -42,13 +55,15 @@ async function retrieve(id: string) {
 
 watch(address, async (val) => {
   if (val.length == 0) { options.value = []; return; }
-  const res = await search(val);
+  const res = await search(val, sessionId.value);
+  updateSessionId(res?.SessionID);
   options.value = res?.Results ?? [];
 });
 
 async function handleSelect(option: SearchResults[number]) {
   if (option.container) {
     const res = await drilldown(option.value ?? "");
+    updateSessionId(res?.SessionID);
     options.value = res?.Results ?? [];
   } else {
     const res = await retrieve(option.value ?? "");
