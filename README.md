@@ -20,6 +20,16 @@ A demo project showcasing Data8's TypeScript packages for validation and data se
 npm install
 ```
 
+Create a `.env` file in the project root and add your Data8 API key:
+
+```env
+API_KEY=your-key-here
+```
+
+If you do not already have a key, create one at:
+
+https://portal.data-8.co.uk/development/api-keys
+
 ### Running the Demos
 
 ```bash
@@ -29,6 +39,8 @@ npm run dev:react
 # Vue demo
 npm run dev:vue
 ```
+
+If `API_KEY` is missing, each app will stop at startup and display an error message with setup instructions.
 
 ## Project Structure
 
