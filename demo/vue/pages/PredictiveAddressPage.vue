@@ -121,10 +121,42 @@ watch(selected, (val) => {
         <li
           v-for="(option, i) in options"
           :key="`${option.value}-${i}`"
-          :style="{ padding: '0.5rem', cursor: 'pointer', borderBottom: '1px solid #eee' }"
+          :style="{
+            padding: '0.5rem',
+            cursor: 'pointer',
+            borderBottom: '1px solid #eee',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '0.5rem',
+            background: option.container ? '#f6f9ff' : undefined,
+            fontWeight: option.container ? 600 : undefined,
+          }"
           @click="handleSelect(option)"
         >
-          {{ option.label }}
+          <span>{{ option.label }}</span>
+          <span
+            v-if="option.container"
+            :style="{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minWidth: '1.6rem',
+              height: '1.6rem',
+              padding: '0 0.45rem',
+              borderRadius: '999px',
+              background: '#dbe8ff',
+              color: '#163c96',
+              fontSize: '0.75rem',
+              lineHeight: 1,
+              fontWeight: 700,
+              flexShrink: 0,
+            }"
+            :aria-label="typeof option.items === 'number' && option.items > 0 ? `${option.items} items available` : 'Contains additional results'"
+            :title="typeof option.items === 'number' && option.items > 0 ? `${option.items} items` : 'More results'"
+          >
+            {{ typeof option.items === "number" && option.items > 0 ? option.items : ">" }}
+          </span>
         </li>
       </ul>
     </div>
