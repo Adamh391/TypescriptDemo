@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import createClient from "openapi-fetch";
 import { PredictiveAddress } from "@data8/types";
 
@@ -11,13 +11,24 @@ const client = createClient<PredictiveAddress.paths>({
 
 type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["PredictiveAddressSearchResponse"]["Results"]>;
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
+type SupportedCountry = PredictiveAddress.components["schemas"]["PredictiveAddressCountryDetails"];
 let predictiveAddressSessionId: string | null = null;
 let activeSearchAbortController: AbortController | null = null;
 
 const address = ref("");
 const options = ref<SearchResults>([]);
 const selected = ref<RetrieveResult | null>(null);
+const countries = ref<SupportedCountry[]>([]);
+const selectedCountry = ref("GB");
 const sessionId = ref<string | null>(predictiveAddressSessionId);
+
+async function getSupportedCountries() {
+  const { data } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
+    headers: { "content-type": "application/json" },
+    body: { username: "apikey-" + API_KEY },
+  });
+  return data;
+}
 
 function updateSessionId(nextSessionId: string | null | undefined) {
   if (!nextSessionId) return;
@@ -25,13 +36,13 @@ function updateSessionId(nextSessionId: string | null | undefined) {
   predictiveAddressSessionId = nextSessionId;
 }
 
-async function search(query: string, activeSessionId: string | null, signal?: AbortSignal) {
+async function search(query: string, country: string, activeSessionId: string | null, signal?: AbortSignal) {
   const { data } = await client.POST("/PredictiveAddress/Search.json", {
     signal,
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
-      country: "GB",
+      country,
       search: query,
       session: activeSessionId ?? undefined,
     },
@@ -39,20 +50,20 @@ async function search(query: string, activeSessionId: string | null, signal?: Ab
   return data;
 }
 
-async function drilldown(id: string) {
+async function drilldown(id: string, country: string) {
   const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, country: "GB", id },
+    body: { username: "apikey-" + API_KEY, country, id },
   });
   return data;
 }
 
-async function retrieve(id: string) {
+async function retrieve(id: string, country: string) {
   const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
-      country: "GB",
+      country,
       id,
       options: {
         MaxLines: 4,
@@ -66,7 +77,21 @@ async function retrieve(id: string) {
   return data;
 }
 
-watch(address, async (val, _, onCleanup) => {
+onMounted(async () => {
+  const res = await getSupportedCountries();
+  const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
+  countries.value = supported;
+
+  selectedCountry.value = res?.CurrentCountry?.ISO2
+    ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
+    ?? "GB";
+});
+
+function handleCountryChange(country: string) {
+  selectedCountry.value = country;
+}
+
+watch([address, selectedCountry], async ([val, country], _, onCleanup) => {
   activeSearchAbortController?.abort();
 
   if (val.length == 0) {
@@ -85,7 +110,7 @@ watch(address, async (val, _, onCleanup) => {
   });
 
   try {
-    const res = await search(val, sessionId.value, controller.signal);
+    const res = await search(val, country, sessionId.value, controller.signal);
     if (controller.signal.aborted) return;
     updateSessionId(res?.SessionID);
     options.value = res?.Results ?? [];
@@ -99,13 +124,20 @@ watch(address, async (val, _, onCleanup) => {
   }
 });
 
+watch(selectedCountry, () => {
+  sessionId.value = null;
+  predictiveAddressSessionId = null;
+  options.value = [];
+  selected.value = null;
+});
+
 async function handleSelect(option: SearchResults[number]) {
   if (option.container) {
-    const res = await drilldown(option.value ?? "");
+    const res = await drilldown(option.value ?? "", selectedCountry.value);
     updateSessionId(res?.SessionID);
     options.value = res?.Results ?? [];
   } else {
-    const res = await retrieve(option.value ?? "");
+    const res = await retrieve(option.value ?? "", selectedCountry.value);
     selected.value = res ?? null;
     options.value = [];
   }
@@ -122,6 +154,20 @@ watch(selected, (val) => {
 <template>
   <div>
     <div>
+      <select
+        v-model="selectedCountry"
+        @change="handleCountryChange(($event.target as HTMLSelectElement).value)"
+        :disabled="countries.length === 0"
+        :style="{ marginBottom: '0.5rem' }"
+      >
+        <option
+          v-for="country in countries"
+          :key="country.ISO2"
+          :value="country.ISO2 ?? ''"
+        >
+          {{ country.Name }} ({{ country.ISO2 }})
+        </option>
+      </select>
       <input
         placeholder="Enter Address"
         @input="address = ($event.target as HTMLInputElement).value"

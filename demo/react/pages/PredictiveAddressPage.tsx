@@ -10,36 +10,45 @@ const client = createClient<PredictiveAddress.paths>({
 
 type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["PredictiveAddressSearchResponse"]["Results"]>;
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
+type SupportedCountry = PredictiveAddress.components["schemas"]["PredictiveAddressCountryDetails"];
 let predictiveAddressSessionId: string | null = null;
 
-async function search(address: string, sessionId: string | null, signal?: AbortSignal) {
+async function getSupportedCountries() {
+  const { data } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
+    headers: { "content-type": "application/json" },
+    body: { username: "apikey-" + API_KEY },
+  });
+  return data;
+}
+
+async function search(address: string, country: string, sessionId: string | null, signal?: AbortSignal) {
   const { data } = await client.POST("/PredictiveAddress/Search.json", {
     signal,
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
       search: address,
-      country: "GB",
+      country,
       session: sessionId ?? undefined,
     },
   });
   return data;
 }
 
-async function drilldown(id: string) {
+async function drilldown(id: string, country: string) {
   const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, country: "GB", id },
+    body: { username: "apikey-" + API_KEY, country, id },
   });
   return data;
 }
 
-async function retrieve(id: string) {
+async function retrieve(id: string, country: string) {
   const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
-      country: "GB",
+      country,
       id,
       options: {
         MaxLines: 4,
@@ -57,6 +66,8 @@ export default function PredictiveAddressPage() {
   const [address, setAddress] = useState("");
   const [options, setOptions] = useState<SearchResults>([]);
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
+  const [countries, setCountries] = useState<SupportedCountry[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState("GB");
   const [sessionId, setSessionId] = useState<string | null>(predictiveAddressSessionId);
   const activeSearchController = useRef<AbortController | null>(null);
 
@@ -65,6 +76,18 @@ export default function PredictiveAddressPage() {
     setSessionId(nextSessionId);
     predictiveAddressSessionId = nextSessionId;
   }
+
+  useEffect(() => {
+    getSupportedCountries().then((res) => {
+      const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
+      setCountries(supported);
+
+      const defaultCountry = res?.CurrentCountry?.ISO2
+        ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
+        ?? "GB";
+      setSelectedCountry(defaultCountry);
+    });
+  }, []);
 
   useEffect(() => {
     activeSearchController.current?.abort();
@@ -77,7 +100,7 @@ export default function PredictiveAddressPage() {
     const controller = new AbortController();
     activeSearchController.current = controller;
 
-    search(address, sessionId, controller.signal)
+    search(address, selectedCountry, sessionId, controller.signal)
       .then((res) => {
         if (controller.signal.aborted) return;
         updateSessionId(res?.SessionID);
@@ -91,15 +114,23 @@ export default function PredictiveAddressPage() {
     return () => {
       controller.abort();
     };
-  }, [address]);
+  }, [address, selectedCountry]);
+
+  function handleCountryChange(country: string) {
+    setSelectedCountry(country);
+    setSessionId(null);
+    predictiveAddressSessionId = null;
+    setOptions([]);
+    setSelected(null);
+  }
 
   async function handleSelect(option: SearchResults[number]) {
     if (option.container) {
-      const res = await drilldown(option.value ?? "");
+      const res = await drilldown(option.value ?? "", selectedCountry);
       updateSessionId(res?.SessionID);
       setOptions(res?.Results ?? []);
     } else {
-      const res = await retrieve(option.value ?? "");
+      const res = await retrieve(option.value ?? "", selectedCountry);
       setSelected(res ?? null);
       setOptions([]);
     }
@@ -111,6 +142,18 @@ export default function PredictiveAddressPage() {
   return (
     <div>
       <div>
+        <select
+          value={selectedCountry}
+          onChange={(e) => handleCountryChange(e.target.value)}
+          disabled={countries.length === 0}
+          style={{ marginBottom: "0.5rem" }}
+        >
+          {countries.map((country) => (
+            <option key={country.ISO2} value={country.ISO2 ?? ""}>
+              {country.Name} ({country.ISO2})
+            </option>
+          ))}
+        </select>
         <input
           placeholder="Enter Address"
           onChange={(e) => setAddress(e.target.value)}
