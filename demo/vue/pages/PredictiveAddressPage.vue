@@ -26,6 +26,7 @@ async function search(query: string) {
 
 async function drilldown(id: string) {
   const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
+    headers: { "content-type": "application/json" },
     body: { username: "apikey-" + API_KEY, country: "GB", id },
   });
   return data;
