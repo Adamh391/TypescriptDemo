@@ -50,7 +50,18 @@ async function drilldown(id: string) {
 async function retrieve(id: string) {
   const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, country: "GB", id },
+    body: {
+      username: "apikey-" + API_KEY,
+      country: "GB",
+      id,
+      options: {
+        MaxLines: 4,
+        FixTownCounty: true,
+        FixPostcode: true,
+        Formatter: "NoOrganisationFormatter",
+        IncludeCountry: true,
+      },
+    },
   });
   return data;
 }
@@ -101,8 +112,10 @@ async function handleSelect(option: SearchResults[number]) {
 }
 
 const raw = ref<RetrieveResult["Result"]>();
+const formattedLines = ref<string[]>([]);
 watch(selected, (val) => {
   raw.value = val?.Result;
+  formattedLines.value = val?.Result?.Address?.Lines ?? [];
 });
 </script>
 
@@ -161,11 +174,11 @@ watch(selected, (val) => {
       </ul>
     </div>
     <input disabled placeholder="Organisation" :value="raw?.RawAddress?.Organisation ?? ''" style="margin-top: 1rem" />
-    <input disabled placeholder="Address Line 1" :value="[raw?.RawAddress?.SubBuildingName, raw?.RawAddress?.BuildingName, raw?.RawAddress?.BuildingNumber, raw?.RawAddress?.ThoroughfareName].filter(Boolean).join(', ') || ''" />
-    <input disabled placeholder="Address Line 2" :value="[raw?.RawAddress?.DependentLocality, raw?.RawAddress?.DoubleDependentLocality].filter(Boolean).join(', ') || ''" />
-    <input disabled placeholder="Town / City" :value="raw?.RawAddress?.Locality ?? ''" />
-    <input disabled placeholder="County" :value="raw?.RawAddress?.PostalCounty ?? raw?.RawAddress?.AdministrativeCounty ?? ''" />
-    <input disabled placeholder="Postcode" :value="raw?.RawAddress?.Postcode ?? ''" />
-    <input disabled placeholder="Country" :value="raw?.RawAddress?.CountryISO2 ?? ''" />
+    <input disabled placeholder="Address Line 1" :value="formattedLines[0] ?? ''" />
+    <input disabled placeholder="Address Line 2" :value="formattedLines[1] ?? ''" />
+    <input disabled placeholder="Town / City" :value="formattedLines[2] ?? ''" />
+    <input disabled placeholder="County" :value="formattedLines[3] ?? ''" />
+    <input disabled placeholder="Postcode" :value="formattedLines[4] ?? ''" />
+    <input disabled placeholder="Country" :value="raw?.RawAddress?.Location?.Country ?? raw?.RawAddress?.CountryISO2 ?? ''" />
   </div>
 </template>

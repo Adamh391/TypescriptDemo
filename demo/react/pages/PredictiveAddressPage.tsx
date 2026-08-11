@@ -37,7 +37,18 @@ async function drilldown(id: string) {
 async function retrieve(id: string) {
   const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, country: "GB", id },
+    body: {
+      username: "apikey-" + API_KEY,
+      country: "GB",
+      id,
+      options: {
+        MaxLines: 4,
+        FixTownCounty: true,
+        FixPostcode: true,
+        Formatter: "NoOrganisationFormatter",
+        IncludeCountry: true,
+      },
+    },
   });
   return data;
 }
@@ -95,6 +106,7 @@ export default function PredictiveAddressPage() {
   }
 
   const raw = selected?.Result?.RawAddress;
+  const formattedLines = selected?.Result?.Address?.Lines ?? [];
 
   return (
     <div>
@@ -152,12 +164,12 @@ export default function PredictiveAddressPage() {
         )}
       </div>
       <input disabled placeholder="Organisation" value={raw?.Organisation ?? ""} style={{ marginTop: "1rem" }} />
-      <input disabled placeholder="Address Line 1" value={[raw?.SubBuildingName, raw?.BuildingName, raw?.BuildingNumber, raw?.ThoroughfareName].filter(Boolean).join(", ") || ""} />
-      <input disabled placeholder="Address Line 2" value={[raw?.DependentLocality, raw?.DoubleDependentLocality].filter(Boolean).join(", ") || ""} />
-      <input disabled placeholder="Town / City" value={raw?.Locality ?? ""} />
-      <input disabled placeholder="County" value={raw?.PostalCounty ?? raw?.AdministrativeCounty ?? ""} />
-      <input disabled placeholder="Postcode" value={raw?.Postcode ?? ""} />
-      <input disabled placeholder="Country" value={raw?.CountryISO2 ?? ""} />
+      <input disabled placeholder="Address Line 1" value={formattedLines[0] ?? ""} />
+      <input disabled placeholder="Address Line 2" value={formattedLines[1] ?? ""} />
+      <input disabled placeholder="Town / City" value={formattedLines[2] ?? ""} />
+      <input disabled placeholder="County" value={formattedLines[3] ?? ""} />
+      <input disabled placeholder="Postcode" value={formattedLines[4] ?? ""} />
+      <input disabled placeholder="Country" value={raw?.Location?.Country ?? raw?.CountryISO2 ?? ""} />
     </div>
   );
 }
