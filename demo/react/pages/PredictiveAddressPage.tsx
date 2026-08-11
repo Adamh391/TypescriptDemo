@@ -66,6 +66,7 @@ export default function PredictiveAddressPage() {
   const [address, setAddress] = useState("");
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [options, setOptions] = useState<SearchResults>([]);
+  const [isResultsOpen, setIsResultsOpen] = useState(false);
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
   const [countries, setCountries] = useState<SupportedCountry[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("GB");
@@ -73,6 +74,7 @@ export default function PredictiveAddressPage() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(predictiveAddressSessionId);
   const activeSearchController = useRef<AbortController | null>(null);
+  const resultsContainerRef = useRef<HTMLDivElement | null>(null);
 
   function updateSessionId(nextSessionId: string | null | undefined) {
     if (!nextSessionId) return;
@@ -93,12 +95,28 @@ export default function PredictiveAddressPage() {
   }, []);
 
   useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (!resultsContainerRef.current || !target) return;
+      if (!resultsContainerRef.current.contains(target)) {
+        setIsResultsOpen(false);
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, []);
+
+  useEffect(() => {
     activeSearchController.current?.abort();
 
     const query = searchQuery ?? address;
 
     if (query.length == 0) {
       setOptions([]);
+      setIsResultsOpen(false);
       return;
     }
 
@@ -110,6 +128,7 @@ export default function PredictiveAddressPage() {
         if (controller.signal.aborted) return;
         updateSessionId(res?.SessionID);
         setOptions(res?.Results ?? []);
+        setIsResultsOpen(true);
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -126,6 +145,7 @@ export default function PredictiveAddressPage() {
     setSessionId(null);
     predictiveAddressSessionId = null;
     setOptions([]);
+    setIsResultsOpen(false);
     setSelected(null);
     setLocationError(null);
     setSearchQuery(null);
@@ -146,6 +166,7 @@ export default function PredictiveAddressPage() {
         const longitude = position.coords.longitude.toFixed(6);
         setSearchQuery(`${latitude}, ${longitude}`);
         setSelected(null);
+        setIsResultsOpen(false);
         setIsLocating(false);
       },
       (error) => {
@@ -160,10 +181,12 @@ export default function PredictiveAddressPage() {
       const res = await drilldown(option.value ?? "", selectedCountry);
       updateSessionId(res?.SessionID);
       setOptions(res?.Results ?? []);
+      setIsResultsOpen(true);
     } else {
       const res = await retrieve(option.value ?? "", selectedCountry);
       setSelected(res ?? null);
       setOptions([]);
+      setIsResultsOpen(false);
     }
   }
 
@@ -186,39 +209,18 @@ export default function PredictiveAddressPage() {
             </option>
           ))}
         </select>
-        <input
-          placeholder="Enter Address"
-          value={address}
-          onChange={(e) => {
-            setAddress(e.target.value);
-            setSearchQuery(null);
-          }}
-          style={{ marginBottom: 0, boxShadow: "none", borderRadius: options.length > 0 ? "4px 4px 0 0" : undefined }}
-        />
-        {selectedCountryDetails?.SupportsGeocoding && <p style={{ margin: "0.35rem 0 0.25rem", color: "#6b7280", fontSize: "0.875rem" }}>Or use your current location:</p>}
-        {selectedCountryDetails?.SupportsGeocoding && (
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            disabled={isLocating}
-            style={{
-              width: "auto",
-              alignSelf: "flex-start",
-              marginBottom: "0.5rem",
-              padding: "0.35rem 0.65rem",
-              fontSize: "0.875rem",
-              background: "transparent",
-              color: "#1f2937",
-              border: "1px solid #cbd5e1",
-              boxShadow: "none",
+        <div ref={resultsContainerRef} style={{ position: "relative" }}>
+          <input
+            placeholder="Enter Address"
+            value={address}
+            onChange={(e) => {
+              setAddress(e.target.value);
+              setSearchQuery(null);
             }}
-          >
-            {isLocating ? "Getting current location..." : "Use Current Location"}
-          </button>
-        )}
-        {locationError && <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.5rem" }}>{locationError}</p>}
-        {options.length > 0 && (
-          <ul style={{ margin: 0, padding: 0, listStyle: "none", border: "1px solid #ccc", borderTop: "none", borderRadius: "0 0 4px 4px", background: "#fff", maxHeight: "250px", overflowY: "scroll" }}>
+            style={{ marginBottom: 0, boxShadow: "none" }}
+          />
+          {isResultsOpen && options.length > 0 && (
+          <ul style={{ position: "absolute", top: "calc(100% + 0.25rem)", left: 0, right: 0, zIndex: 20, margin: 0, padding: 0, listStyle: "none", border: "1px solid #ccc", borderRadius: "0 0 4px 4px", background: "#fff", maxHeight: "250px", overflowY: "auto", boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)" }}>
             {options.map((option, i) => (
               <li
                 key={`${option.value}-${i}`}
@@ -263,6 +265,29 @@ export default function PredictiveAddressPage() {
             ))}
           </ul>
         )}
+        </div>
+        {selectedCountryDetails?.SupportsGeocoding && <p style={{ margin: "0.35rem 0 0.25rem", color: "#6b7280", fontSize: "0.875rem" }}>Or use your current location:</p>}
+        {selectedCountryDetails?.SupportsGeocoding && (
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={isLocating}
+            style={{
+              width: "auto",
+              alignSelf: "flex-start",
+              marginBottom: "0.5rem",
+              padding: "0.35rem 0.65rem",
+              fontSize: "0.875rem",
+              background: "transparent",
+              color: "#1f2937",
+              border: "1px solid #cbd5e1",
+              boxShadow: "none",
+            }}
+          >
+            {isLocating ? "Getting current location..." : "Use Current Location"}
+          </button>
+        )}
+        {locationError && <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.5rem" }}>{locationError}</p>}
       </div>
       <div aria-hidden="true" style={{ margin: "1rem 0", borderTop: "2px solid #d1d5db" }} />
       <input disabled placeholder="Organisation" value={raw?.Organisation ?? ""} style={{ marginTop: "1rem" }} />
