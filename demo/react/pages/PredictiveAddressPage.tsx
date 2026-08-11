@@ -40,7 +40,7 @@ export default function PredictiveAddressPage() {
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
 
   useEffect(() => {
-    if (address.length <= 3) { setOptions([]); return; }
+    if (address.length == 0) { setOptions([]); return; }
     search(address).then((res) => setOptions(res?.Results ?? []));
   }, [address]);
 

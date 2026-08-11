@@ -40,7 +40,7 @@ async function retrieve(id: string) {
 }
 
 watch(address, async (val) => {
-  if (val.length <= 3) { options.value = []; return; }
+  if (val.length == 0) { options.value = []; return; }
   const res = await search(val);
   options.value = res?.Results ?? [];
 });
