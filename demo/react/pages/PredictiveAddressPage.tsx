@@ -1,5 +1,5 @@
 import createClient from "openapi-fetch";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PredictiveAddress } from "@data8/types";
 
 const API_KEY = import.meta.env.API_KEY;
@@ -12,8 +12,9 @@ type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["Predic
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
 let predictiveAddressSessionId: string | null = null;
 
-async function search(address: string, sessionId: string | null) {
+async function search(address: string, sessionId: string | null, signal?: AbortSignal) {
   const { data } = await client.POST("/PredictiveAddress/Search.json", {
+    signal,
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
@@ -46,6 +47,7 @@ export default function PredictiveAddressPage() {
   const [options, setOptions] = useState<SearchResults>([]);
   const [selected, setSelected] = useState<RetrieveResult | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(predictiveAddressSessionId);
+  const activeSearchController = useRef<AbortController | null>(null);
 
   function updateSessionId(nextSessionId: string | null | undefined) {
     if (!nextSessionId) return;
@@ -54,11 +56,30 @@ export default function PredictiveAddressPage() {
   }
 
   useEffect(() => {
-    if (address.length == 0) { setOptions([]); return; }
-    search(address, sessionId).then((res) => {
-      updateSessionId(res?.SessionID);
-      setOptions(res?.Results ?? []);
-    });
+    activeSearchController.current?.abort();
+
+    if (address.length == 0) {
+      setOptions([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    activeSearchController.current = controller;
+
+    search(address, sessionId, controller.signal)
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        updateSessionId(res?.SessionID);
+        setOptions(res?.Results ?? []);
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        throw error;
+      });
+
+    return () => {
+      controller.abort();
+    };
   }, [address]);
 
   async function handleSelect(option: SearchResults[number]) {

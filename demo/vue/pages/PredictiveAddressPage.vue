@@ -12,6 +12,7 @@ const client = createClient<PredictiveAddress.paths>({
 type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["PredictiveAddressSearchResponse"]["Results"]>;
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
 let predictiveAddressSessionId: string | null = null;
+let activeSearchAbortController: AbortController | null = null;
 
 const address = ref("");
 const options = ref<SearchResults>([]);
@@ -24,8 +25,9 @@ function updateSessionId(nextSessionId: string | null | undefined) {
   predictiveAddressSessionId = nextSessionId;
 }
 
-async function search(query: string, activeSessionId: string | null) {
+async function search(query: string, activeSessionId: string | null, signal?: AbortSignal) {
   const { data } = await client.POST("/PredictiveAddress/Search.json", {
+    signal,
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
@@ -53,11 +55,37 @@ async function retrieve(id: string) {
   return data;
 }
 
-watch(address, async (val) => {
-  if (val.length == 0) { options.value = []; return; }
-  const res = await search(val, sessionId.value);
-  updateSessionId(res?.SessionID);
-  options.value = res?.Results ?? [];
+watch(address, async (val, _, onCleanup) => {
+  activeSearchAbortController?.abort();
+
+  if (val.length == 0) {
+    options.value = [];
+    return;
+  }
+
+  const controller = new AbortController();
+  activeSearchAbortController = controller;
+
+  onCleanup(() => {
+    controller.abort();
+    if (activeSearchAbortController === controller) {
+      activeSearchAbortController = null;
+    }
+  });
+
+  try {
+    const res = await search(val, sessionId.value, controller.signal);
+    if (controller.signal.aborted) return;
+    updateSessionId(res?.SessionID);
+    options.value = res?.Results ?? [];
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") return;
+    throw error;
+  } finally {
+    if (activeSearchAbortController === controller) {
+      activeSearchAbortController = null;
+    }
+  }
 });
 
 async function handleSelect(option: SearchResults[number]) {
