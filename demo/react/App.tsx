@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import EmailValidationPage from "./pages/EmailValidationPage";
 import PredictiveAddressPage from "./pages/PredictiveAddressPage";
+import PredictiveAddressHostPage from "./pages/PredictiveAddressHostPage";
 import BankAccountValidationPage from "./pages/BankAccountValidationPage";
 
 const API_KEY = import.meta.env.API_KEY;
@@ -30,7 +31,8 @@ function MissingApiKeyMessage() {
 
 const tabs = [
   { id: "email", label: "Email Validation", component: EmailValidationPage },
-  { id: "address", label: "Predictive Address", component: PredictiveAddressPage },
+  { id: "address", label: "Predictive Address Demo", component: PredictiveAddressPage },
+  { id: "address-host", label: "Address Input Host", component: PredictiveAddressHostPage },
   { id: "bank", label: "Bank Account Validation", component: BankAccountValidationPage },
 ] as const;
 
