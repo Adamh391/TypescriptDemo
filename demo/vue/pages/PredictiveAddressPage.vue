@@ -45,81 +45,76 @@ function handleDocumentPointerDown(event: PointerEvent) {
   }
 }
 
+async function search(address: string, country: string, sessionId: string | null, signal?: AbortSignal) {
+  const { data } = await client.POST("/PredictiveAddress/Search.json", {
+    signal,
+    headers: { "content-type": "application/json" },
+    body: {
+      username: "apikey-" + API_KEY,
+      search: address,
+      country,
+      session: sessionId ?? undefined,
+    },
+  });
+  return data;
+}
+
+async function drilldown(id: string, country: string) {
+  const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
+    headers: { "content-type": "application/json" },
+    body: { username: "apikey-" + API_KEY, country, id },
+  });
+  return data;
+}
+
+async function retrieve(id: string, country: string) {
+  const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
+    headers: { "content-type": "application/json" },
+    body: {
+      username: "apikey-" + API_KEY,
+      country,
+      id,
+      options: {
+        MaxLines: 4,
+        FixTownCounty: true,
+        FixPostcode: true,
+        Formatter: "NoOrganisationFormatter",
+        IncludeCountry: true,
+      },
+    },
+  });
+  return data;
+}
+
 function updateSessionId(nextSessionId: string | null | undefined) {
-      <div ref="resultsContainerRef" :style="{ position: 'relative' }">
-        <input
-          placeholder="Enter Address"
-          v-model="address"
-          @input="searchQuery = null"
-          :style="{ marginBottom: 0, boxShadow: 'none' }"
-        />
-        <ul
-          v-if="isResultsOpen && options.length > 0"
-          :style="{ position: 'absolute', top: 'calc(100% + 0.25rem)', left: 0, right: 0, zIndex: 20, margin: 0, padding: 0, listStyle: 'none', border: '1px solid #ccc', borderRadius: '0 0 4px 4px', background: '#fff', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)' }"
-        >
-          <li
-            v-for="(option, i) in options"
-            :key="`${option.value}-${i}`"
-            :style="{
-              padding: '0.5rem',
-              cursor: 'pointer',
-              borderBottom: '1px solid #eee',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '0.5rem',
-              background: option.container ? '#f6f9ff' : undefined,
-              fontWeight: option.container ? 600 : undefined,
-            }"
-            @click="handleSelect(option)"
-          >
-            <span>{{ option.label }}</span>
-            <span
-              v-if="option.container"
-              :style="{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '1.6rem',
-                height: '1.6rem',
-                padding: '0 0.45rem',
-                borderRadius: '999px',
-                background: '#dbe8ff',
-                color: '#163c96',
-                fontSize: '0.75rem',
-                lineHeight: 1,
-                fontWeight: 700,
-                flexShrink: 0,
-              }"
-              :aria-label="typeof option.items === 'number' && option.items > 0 ? `${option.items} items available` : 'Contains additional results'"
-              :title="typeof option.items === 'number' && option.items > 0 ? `${option.items} items` : 'More results'"
-            >
-              {{ typeof option.items === "number" && option.items > 0 ? option.items : ">" }}
-            </span>
-          </li>
-        </ul>
-      </div>
-      <p v-if="selectedCountryDetails?.SupportsGeocoding" :style="{ margin: '0.35rem 0 0.25rem', color: '#6b7280', fontSize: '0.875rem' }">Or use your current location:</p>
-      <button
-        v-if="selectedCountryDetails?.SupportsGeocoding"
-        type="button"
-        @click="handleUseCurrentLocation"
-        :disabled="isLocating"
-        :style="{
-          width: 'auto',
-          alignSelf: 'flex-start',
-          marginBottom: '0.5rem',
-          padding: '0.35rem 0.65rem',
-          fontSize: '0.875rem',
-          background: 'transparent',
-          color: '#1f2937',
-          border: '1px solid #cbd5e1',
-          boxShadow: 'none',
-        }"
-      >
-        {{ isLocating ? "Getting current location..." : "Use Current Location" }}
-      </button>
-      <p v-if="locationError" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ locationError }}</p>
+  if (!nextSessionId) return;
+  sessionId.value = nextSessionId;
+  predictiveAddressSessionId = nextSessionId;
+}
+
+onMounted(async () => {
+  const res = await getSupportedCountries();
+  const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
+  countries.value = supported;
+
+  selectedCountry.value = res?.CurrentCountry?.ISO2
+    ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
+    ?? "GB";
+
+  window.addEventListener("pointerdown", handleDocumentPointerDown);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("pointerdown", handleDocumentPointerDown);
+});
+
+function handleCountryChange(country: string) {
+  selectedCountry.value = country;
+}
+
+function handleUseCurrentLocation() {
+  if (!navigator.geolocation) {
+    locationError.value = "Geolocation is not supported by this browser.";
     return;
   }
 
@@ -160,7 +155,7 @@ watch([address, searchQuery, selectedCountry], async ([val, query, country], _, 
     controller.abort();
     if (activeSearchAbortController === controller) {
       activeSearchAbortController = null;
-    isResultsOpen.value = false;
+    }
   });
 
   try {
@@ -168,6 +163,7 @@ watch([address, searchQuery, selectedCountry], async ([val, query, country], _, 
     if (controller.signal.aborted) return;
     updateSessionId(res?.SessionID);
     options.value = res?.Results ?? [];
+    isResultsOpen.value = true;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") return;
     throw error;
@@ -179,7 +175,7 @@ watch([address, searchQuery, selectedCountry], async ([val, query, country], _, 
 });
 
 watch(selectedCountry, () => {
-    isResultsOpen.value = true;
+  sessionId.value = null;
   predictiveAddressSessionId = null;
   options.value = [];
   isResultsOpen.value = false;
@@ -221,7 +217,7 @@ watch(selected, (val) => {
       >
         <option
           v-for="country in countries"
-          :key="country.ISO2"
+          :key="country.ISO2 ?? ''"
           :value="country.ISO2 ?? ''"
         >
           {{ country.Name }} ({{ country.ISO2 }})
