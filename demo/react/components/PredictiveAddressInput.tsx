@@ -364,8 +364,9 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
       <div
         {...rootSlotProps}
         ref={resultsContainerRef}
-        style={{ position: "relative", ...rootSlotProps.style }}
+        style={{ ...rootSlotProps.style }}
       >
+        <div style={{ position: "relative" }}>
         {showCurrentLocation && canUseCurrentLocation && (
           <button
             {...currentLocationButtonSlotProps}
@@ -568,6 +569,7 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
             ))}
           </ul>
         )}
+        </div>
         {locationError && (
           <p
             {...locationErrorSlotProps}
