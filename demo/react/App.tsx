@@ -32,7 +32,7 @@ function MissingApiKeyMessage() {
 
 const tabs = [
   { id: "email", label: "Email Validation", component: EmailValidationPage },
-  { id: "address", label: "Predictive Address Demo", component: PredictiveAddressPage },
+  { id: "address", label: "Predictive Address", component: PredictiveAddressPage },
   { id: "address-host", label: "Address Input Host", component: PredictiveAddressHostPage },
   { id: "bank", label: "Bank Account Validation", component: BankAccountValidationPage },
   { id: "phone", label: "Phone Validation", component: PhoneValidationPage },
