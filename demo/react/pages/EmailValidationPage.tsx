@@ -158,19 +158,19 @@ export default function EmailValidationPage() {
       <form onSubmit={handleSubmit}>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <input
-            type="text"
-            value={nameValue}
-            onChange={(e) => setNameValue(e.target.value)}
-            placeholder="Enter name (optional)"
-            disabled={loading}
-            style={{ width: "100%" }}
-          />
-          <input
             type="email"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Enter email address"
             required
+            disabled={loading}
+            style={{ width: "100%" }}
+          />
+          <input
+            type="text"
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            placeholder="Enter name (optional)"
             disabled={loading}
             style={{ width: "100%" }}
           />

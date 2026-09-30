@@ -129,17 +129,17 @@ async function handleSubmit() {
     <form @submit.prevent="handleSubmit">
       <div :style="{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }">
         <input
-          type="text"
-          v-model="nameValue"
-          placeholder="Enter name (optional)"
-          :disabled="loading"
-          style="width: 100%"
-        />
-        <input
           type="email"
           v-model="inputValue"
           placeholder="Enter email address"
           required
+          :disabled="loading"
+          style="width: 100%"
+        />
+        <input
+          type="text"
+          v-model="nameValue"
+          placeholder="Enter name (optional)"
           :disabled="loading"
           style="width: 100%"
         />
