@@ -4,6 +4,7 @@ import EmailValidationPage from "./pages/EmailValidationPage";
 import PredictiveAddressPage from "./pages/PredictiveAddressPage";
 import PredictiveAddressHostPage from "./pages/PredictiveAddressHostPage";
 import BankAccountValidationPage from "./pages/BankAccountValidationPage";
+import PhoneValidationPage from "./pages/PhoneValidationPage";
 
 const API_KEY = import.meta.env.API_KEY;
 
@@ -34,6 +35,7 @@ const tabs = [
   { id: "address", label: "Predictive Address Demo", component: PredictiveAddressPage },
   { id: "address-host", label: "Address Input Host", component: PredictiveAddressHostPage },
   { id: "bank", label: "Bank Account Validation", component: BankAccountValidationPage },
+  { id: "phone", label: "Phone Validation", component: PhoneValidationPage },
 ] as const;
 
 function App() {

@@ -3,11 +3,13 @@ import { ref } from "vue";
 import EmailValidationPage from "./pages/EmailValidationPage.vue";
 import PredictiveAddressPage from "./pages/PredictiveAddressPage.vue";
 import BankAccountValidationPage from "./pages/BankAccountValidationPage.vue";
+import PhoneValidationPage from "./pages/PhoneValidationPage.vue";
 
 const tabs = [
   { id: "email", label: "Email Validation" },
   { id: "address", label: "Predictive Address" },
   { id: "bank", label: "Bank Account Validation" },
+  { id: "phone", label: "Phone Validation" },
 ] as const;
 
 const activeTab = ref<string>("email");
@@ -32,5 +34,6 @@ const activeTab = ref<string>("email");
     <EmailValidationPage v-if="activeTab === 'email'" />
     <PredictiveAddressPage v-if="activeTab === 'address'" />
     <BankAccountValidationPage v-if="activeTab === 'bank'" />
+    <PhoneValidationPage v-if="activeTab === 'phone'" />
   </main>
 </template>
