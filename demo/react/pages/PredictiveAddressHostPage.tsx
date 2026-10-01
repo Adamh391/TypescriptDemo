@@ -104,8 +104,9 @@ export default function PredictiveAddressHostPage() {
     <section style={{ maxWidth: "820px" }}>
       <h2 style={{ marginTop: 0 }}>Predictive Address component</h2>
       <p style={{ color: "#4b5563", marginTop: 0 }}>
-        This page shows the reusable address textbox wired into a normal form. The component emits the selected address
-        back to the host so the rest of the fields can be filled independently.
+        This page uses the reusable <code>PredictiveAddressInput</code> component inside a form. The component handles
+        searching, navigating address results, retrieving the selected address, and the optional current-location control;
+        the host only configures it and receives the selected address to populate the remaining fields.
       </p>
 
       <div

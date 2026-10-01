@@ -7,6 +7,16 @@ A demo project showcasing Data8's TypeScript packages for validation and data se
 - **Predictive Address** — Address autocomplete
 - **Email Validation** — Email address verification
 - **Bank Account Validation** — Bank account number and sort code checking
+- **Phone Validation** — Check if a phone number is valid
+
+## Reusable Predictive Address Components
+
+The demo includes reusable `PredictiveAddressInput` components for React and Vue:
+
+- `demo/react/components/PredictiveAddressInput.tsx`
+- `demo/vue/components/PredictiveAddressInput.vue`
+
+They encapsulate the process of implementing Predictive Address into a form, speeding up development. See the `PredictiveAddressHostPage` files for implementation examples.
 
 ## Getting Started
 
