@@ -1,3 +1,6 @@
+<!-- Data8 Phone Validation API Documentation
+https://docs.data-8.co.uk/web-services/phonevalidation/isvalid -->
+
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import type { PhoneValidation } from "@data8/types";

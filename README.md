@@ -9,6 +9,10 @@ A demo project showcasing Data8's TypeScript packages for validation and data se
 - **Bank Account Validation** — Bank account number and sort code checking
 - **Phone Validation** — Check if a phone number is valid
 
+## Documentation
+
+For endpoint details, authentication, and request and response formats, see the [Data8 Web Services API documentation](https://docs.data-8.co.uk/).
+
 ## Reusable Predictive Address Components
 
 The demo includes reusable `PredictiveAddressInput` components for React and Vue:

@@ -1,3 +1,6 @@
+// Data8 Email Validation API Documentation
+// https://docs.data-8.co.uk/web-services/emailvalidation/cleanse
+
 import React, { useState } from "react";
 import { EmailValidation } from "@data8/types";
 import createClient from "openapi-fetch";

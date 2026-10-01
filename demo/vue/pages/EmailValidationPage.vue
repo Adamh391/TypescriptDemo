@@ -1,3 +1,6 @@
+<!-- Data8 Email Validation API Documentation
+https://docs.data-8.co.uk/web-services/emailvalidation/cleanse -->
+
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import createClient from "openapi-fetch";

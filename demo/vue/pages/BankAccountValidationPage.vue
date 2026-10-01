@@ -1,3 +1,6 @@
+<!-- Data8 Bank Account Validation API Documentation
+https://docs.data-8.co.uk/web-services/bankaccountvalidation/isvalid -->
+
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import createClient from "openapi-fetch";
