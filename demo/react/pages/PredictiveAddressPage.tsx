@@ -32,7 +32,7 @@ async function search(address: string, country: string, sessionId: string | null
   if (!data?.Status?.Success) {
     throw new Error(data?.Status?.ErrorMessage ?? "Predictive address search failed");
   }
-  
+
   return data;
 }
 
@@ -48,7 +48,7 @@ async function drilldown(id: string, country: string) {
   if (!data?.Status?.Success) {
     throw new Error(data?.Status?.ErrorMessage ?? "Predictive address drilldown failed");
   }
-  
+
   return data;
 }
 
@@ -75,7 +75,7 @@ async function retrieve(id: string, country: string) {
   if (!data?.Status?.Success) {
     throw new Error(data?.Status?.ErrorMessage ?? "Predictive address retrieve failed");
   }
-  
+
   return data;
 }
 
@@ -111,21 +111,21 @@ export default function PredictiveAddressPage() {
     predictiveAddressSessionId = nextSessionId;
   }
 
-useEffect(() => {
-  getSupportedCountries()
-    .then((res) => {
-      const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
-      setCountries(supported);
+  useEffect(() => {
+    getSupportedCountries()
+      .then((res) => {
+        const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
+        setCountries(supported);
 
-      const defaultCountry = res?.CurrentCountry?.ISO2
-        ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
-        ?? "GB";
-      setSelectedCountry(defaultCountry);
-    })
-    .catch((err) => {
-      setErrorMessage(getErrorMessage(err, "Error loading predictive address supported countries"));
-    });
-}, []);
+        const defaultCountry = res?.CurrentCountry?.ISO2
+          ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
+          ?? "GB";
+        setSelectedCountry(defaultCountry);
+      })
+      .catch((err) => {
+        setErrorMessage(getErrorMessage(err, "Error loading predictive address supported countries"));
+      });
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -213,24 +213,24 @@ useEffect(() => {
     );
   }
 
-async function handleSelect(option: SearchResults[number]) {
-  setErrorMessage(null);
-  try {
-    if (option.container) {
-      const res = await drilldown(option.value ?? "", selectedCountry);
-      updateSessionId(res?.SessionID);
-      setOptions(res?.Results ?? []);
-      setIsResultsOpen(true);
-    } else {
-      const res = await retrieve(option.value ?? "", selectedCountry);
-      setSelected(res ?? null);
-      setOptions([]);
-      setIsResultsOpen(false);
+  async function handleSelect(option: SearchResults[number]) {
+    setErrorMessage(null);
+    try {
+      if (option.container) {
+        const res = await drilldown(option.value ?? "", selectedCountry);
+        updateSessionId(res?.SessionID);
+        setOptions(res?.Results ?? []);
+        setIsResultsOpen(true);
+      } else {
+        const res = await retrieve(option.value ?? "", selectedCountry);
+        setSelected(res ?? null);
+        setOptions([]);
+        setIsResultsOpen(false);
+      }
+    } catch (err) {
+      setErrorMessage(getErrorMessage(err, "Error loading the selected address"));
     }
-  } catch (err) {
-    setErrorMessage(getErrorMessage(err, "Error loading the selected address"));
   }
-}
 
   const raw = selected?.Result?.RawAddress;
   const formattedLines = selected?.Result?.Address?.Lines ?? [];
@@ -262,53 +262,74 @@ async function handleSelect(option: SearchResults[number]) {
             style={{ marginBottom: 0, boxShadow: "none" }}
           />
           {isResultsOpen && options.length > 0 && (
-          <ul style={{ position: "absolute", top: "calc(100% + 0.25rem)", left: 0, right: 0, zIndex: 20, margin: 0, padding: 0, listStyle: "none", border: "1px solid #ccc", borderRadius: "0 0 4px 4px", background: "#fff", maxHeight: "250px", overflowY: "auto", boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)" }}>
-            {options.map((option, i) => (
-              <li
-                key={`${option.value}-${i}`}
-                style={{
-                  padding: "0.5rem",
-                  cursor: "pointer",
-                  borderBottom: "1px solid #eee",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "0.5rem",
-                  background: option.container ? "#f6f9ff" : undefined,
-                  fontWeight: option.container ? 600 : undefined,
-                }}
-                onClick={() => handleSelect(option)}
-              >
-                <span>{option.label}</span>
-                {option.container && (
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minWidth: "1.6rem",
-                      height: "1.6rem",
-                      padding: "0 0.45rem",
-                      borderRadius: "999px",
-                      background: "#dbe8ff",
-                      color: "#163c96",
-                      fontSize: "0.75rem",
-                      lineHeight: 1,
-                      fontWeight: 700,
-                      flexShrink: 0,
-                    }}
-                    aria-label={option.items ? `${option.items} items available` : "Contains additional results"}
-                    title={option.items ? `${option.items} items` : "More results"}
-                  >
-                    {typeof option.items === "number" && option.items > 0 ? option.items : ">"}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+            <ul
+              style={{
+                position: "absolute",
+                top: "calc(100% + 0.25rem)",
+                left: 0,
+                right: 0,
+                zIndex: 20,
+                margin: 0,
+                padding: 0,
+                listStyle: "none",
+                border: "1px solid #ccc",
+                borderRadius: "0 0 4px 4px",
+                background: "#fff",
+                maxHeight: "250px",
+                overflowY: "auto",
+                boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
+              }}
+            >
+              {options.map((option, i) => (
+                <li
+                  key={`${option.value}-${i}`}
+                  style={{
+                    padding: "0.5rem",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "0.5rem",
+                    background: option.container ? "#f6f9ff" : undefined,
+                    fontWeight: option.container ? 600 : undefined,
+                  }}
+                  onClick={() => handleSelect(option)}
+                >
+                  <span>{option.label}</span>
+                  {option.container && (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minWidth: "1.6rem",
+                        height: "1.6rem",
+                        padding: "0 0.45rem",
+                        borderRadius: "999px",
+                        background: "#dbe8ff",
+                        color: "#163c96",
+                        fontSize: "0.75rem",
+                        lineHeight: 1,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                      aria-label={option.items ? `${option.items} items available` : "Contains additional results"}
+                      title={option.items ? `${option.items} items` : "More results"}
+                    >
+                      {typeof option.items === "number" && option.items > 0 ? option.items : ">"}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        {selectedCountryDetails?.SupportsGeocoding && <p style={{ margin: "0.35rem 0 0.25rem", color: "#6b7280", fontSize: "0.875rem" }}>Or use your current location:</p>}
+        {selectedCountryDetails?.SupportsGeocoding && (
+          <p style={{ margin: "0.35rem 0 0.25rem", color: "#6b7280", fontSize: "0.875rem" }}>
+            Or use your current location:
+          </p>
+        )}
         {selectedCountryDetails?.SupportsGeocoding && (
           <button
             type="button"

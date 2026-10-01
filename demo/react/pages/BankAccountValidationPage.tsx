@@ -12,7 +12,7 @@ const client = createClient<BankAccountValidation.paths>({
 async function validateBankDetails(sortCode: string, accountNumber: string) {
   const { data, error } = await client.POST("/BankAccountValidation/IsValid.json", {
     headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY, bankAccountNumber: accountNumber, sortCode},
+    body: { username: "apikey-" + API_KEY, bankAccountNumber: accountNumber, sortCode },
   });
   if (error) {
     throw new Error(getErrorMessage(error, "Bank account validation request failed"));
@@ -21,7 +21,7 @@ async function validateBankDetails(sortCode: string, accountNumber: string) {
   if (!data?.Status?.Success) {
     throw new Error(data?.Status?.ErrorMessage ?? "Bank account validation failed");
   }
-  
+
   return data;
 }
 
@@ -90,13 +90,26 @@ function ResultCard({ result }: { result: ValidationResult }) {
   const detailRows = collectDetailRows(result);
 
   return (
-    <article style={{ marginTop: "1.5rem", borderLeft: `4px solid ${isValid ? "#2ecc40" : "#ff4136"}`, paddingLeft: "1rem" }}>
+    <article
+      style={{
+        marginTop: "1.5rem",
+        borderLeft: `4px solid ${isValid ? "#2ecc40" : "#ff4136"}`,
+        paddingLeft: "1rem",
+      }}
+    >
       <h3 style={{ color: isValid ? "#2ecc40" : "#ff4136", margin: "0 0 0.5rem" }}>
         {isValid ? "✓ Valid" : "✗ Invalid"}
       </h3>
       <p style={{ margin: 0, color: "#555" }}>{result.Valid}</p>
       {detailRows.length > 0 && (
-        <dl style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 2fr", gap: "0.3rem 0.8rem" }}>
+        <dl
+          style={{
+            marginTop: "0.75rem",
+            display: "grid",
+            gridTemplateColumns: "minmax(180px, 1fr) 2fr",
+            gap: "0.3rem 0.8rem",
+          }}
+        >
           {detailRows.map((row, index) => (
             <React.Fragment key={`${row.label}-${index}`}>
               <dt style={{ margin: 0, fontWeight: 600 }}>{row.label}</dt>

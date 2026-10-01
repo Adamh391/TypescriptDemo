@@ -173,7 +173,12 @@ async function handleSubmit() {
       <p style="margin: 0; color: #555">{{ result.Result }}</p>
       <dl
         v-if="detailRows.length > 0"
-        :style="{ marginTop: '0.75rem', display: 'grid', gridTemplateColumns: 'minmax(180px, 1fr) 2fr', gap: '0.3rem 0.8rem' }"
+        :style="{
+          marginTop: '0.75rem',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(180px, 1fr) 2fr',
+          gap: '0.3rem 0.8rem',
+        }"
       >
         <template v-for="(row, index) in detailRows" :key="`${row.label}-${index}`">
           <dt :style="{ margin: 0, fontWeight: 600 }">{{ row.label }}</dt>

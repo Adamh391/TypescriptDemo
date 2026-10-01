@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { PredictiveAddressInput, PredictiveAddressRetrieveOptions, RetrieveResult } from "../components/PredictiveAddressInput";
+import {
+  PredictiveAddressInput,
+  PredictiveAddressRetrieveOptions,
+  RetrieveResult,
+} from "../components/PredictiveAddressInput";
 import { usePredictiveAddressCountries } from "../hooks/usePredictiveAddressCountries";
 
 const API_KEY = import.meta.env.API_KEY;
@@ -25,8 +29,7 @@ const INPUT_SLOTS = {
     style: { fontFamily: "inherit" },
   },
   input: {
-    style: {
-    },
+    style: {},
   },
   dropdown: {
     style: {
@@ -101,7 +104,8 @@ export default function PredictiveAddressHostPage() {
     <section style={{ maxWidth: "820px" }}>
       <h2 style={{ marginTop: 0 }}>Predictive Address input host</h2>
       <p style={{ color: "#4b5563", marginTop: 0 }}>
-        This page shows the reusable address textbox wired into a normal form. The component emits the selected address back to the host so the rest of the fields can be filled independently.
+        This page shows the reusable address textbox wired into a normal form. The component emits the selected address
+        back to the host so the rest of the fields can be filled independently.
       </p>
 
       <div
@@ -116,7 +120,11 @@ export default function PredictiveAddressHostPage() {
         <div style={{ display: "grid", gap: "0.9rem" }}>
           <label style={{ display: "grid", gap: "0.35rem" }}>
             <span style={{ fontWeight: 600 }}>Country</span>
-            <select value={country} onChange={(e) => handleCountryChange(e.target.value)} disabled={isLoading || countries.length === 0}>
+            <select
+              value={country}
+              onChange={(e) => handleCountryChange(e.target.value)}
+              disabled={isLoading || countries.length === 0}
+            >
               {countries.map((item) => (
                 <option key={item.ISO2 ?? ""} value={item.ISO2 ?? ""}>
                   {item.Name} ({item.ISO2})

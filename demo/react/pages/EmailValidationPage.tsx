@@ -117,13 +117,26 @@ function ResultCard({ result }: { result: ValidationResult }) {
   const detailRows = collectDetailRows(result);
 
   return (
-    <article style={{ marginTop: "1.5rem", borderLeft: `4px solid ${isValid ? "#2ecc40" : "#ff4136"}`, paddingLeft: "1rem" }}>
+    <article
+      style={{
+        marginTop: "1.5rem",
+        borderLeft: `4px solid ${isValid ? "#2ecc40" : "#ff4136"}`,
+        paddingLeft: "1rem",
+      }}
+    >
       <h3 style={{ color: isValid ? "#2ecc40" : "#ff4136", margin: "0 0 0.5rem" }}>
         {isValid ? "✓ Valid" : "✗ Invalid"}
       </h3>
       <p style={{ margin: 0, color: "#555" }}>{result.Result}</p>
       {detailRows.length > 0 && (
-        <dl style={{ marginTop: "0.75rem", display: "grid", gridTemplateColumns: "minmax(180px, 1fr) 2fr", gap: "0.3rem 0.8rem" }}>
+        <dl
+          style={{
+            marginTop: "0.75rem",
+            display: "grid",
+            gridTemplateColumns: "minmax(180px, 1fr) 2fr",
+            gap: "0.3rem 0.8rem",
+          }}
+        >
           {detailRows.map((row, index) => (
             <React.Fragment key={`${row.label}-${index}`}>
               <dt style={{ margin: 0, fontWeight: 600 }}>{row.label}</dt>

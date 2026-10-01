@@ -286,52 +286,72 @@ watch(selected, (val) => {
         />
         <ul
           v-if="isResultsOpen && options.length > 0"
-          :style="{ position: 'absolute', top: 'calc(100% + 0.25rem)', left: 0, right: 0, zIndex: 20, margin: 0, padding: 0, listStyle: 'none', border: '1px solid #ccc', borderRadius: '0 0 4px 4px', background: '#fff', maxHeight: '250px', overflowY: 'auto', boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)' }"
-        >
-        <li
-          v-for="(option, i) in options"
-          :key="`${option.value}-${i}`"
           :style="{
-            padding: '0.5rem',
-            cursor: 'pointer',
-            borderBottom: '1px solid #eee',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '0.5rem',
-            background: option.container ? '#f6f9ff' : undefined,
-            fontWeight: option.container ? 600 : undefined,
+            position: 'absolute',
+            top: 'calc(100% + 0.25rem)',
+            left: 0,
+            right: 0,
+            zIndex: 20,
+            margin: 0,
+            padding: 0,
+            listStyle: 'none',
+            border: '1px solid #ccc',
+            borderRadius: '0 0 4px 4px',
+            background: '#fff',
+            maxHeight: '250px',
+            overflowY: 'auto',
+            boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
           }"
-          @click="handleSelect(option)"
         >
-          <span>{{ option.label }}</span>
-          <span
-            v-if="option.container"
+          <li
+            v-for="(option, i) in options"
+            :key="`${option.value}-${i}`"
             :style="{
-              display: 'inline-flex',
+              padding: '0.5rem',
+              cursor: 'pointer',
+              borderBottom: '1px solid #eee',
+              display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: '1.6rem',
-              height: '1.6rem',
-              padding: '0 0.45rem',
-              borderRadius: '999px',
-              background: '#dbe8ff',
-              color: '#163c96',
-              fontSize: '0.75rem',
-              lineHeight: 1,
-              fontWeight: 700,
-              flexShrink: 0,
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+              background: option.container ? '#f6f9ff' : undefined,
+              fontWeight: option.container ? 600 : undefined,
             }"
-            :aria-label="typeof option.items === 'number' && option.items > 0 ? `${option.items} items available` : 'Contains additional results'"
-            :title="typeof option.items === 'number' && option.items > 0 ? `${option.items} items` : 'More results'"
+            @click="handleSelect(option)"
           >
-            {{ typeof option.items === "number" && option.items > 0 ? option.items : ">" }}
-          </span>
-        </li>
+            <span>{{ option.label }}</span>
+            <span
+              v-if="option.container"
+              :style="{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '1.6rem',
+                height: '1.6rem',
+                padding: '0 0.45rem',
+                borderRadius: '999px',
+                background: '#dbe8ff',
+                color: '#163c96',
+                fontSize: '0.75rem',
+                lineHeight: 1,
+                fontWeight: 700,
+                flexShrink: 0,
+              }"
+              :aria-label="typeof option.items === 'number' && option.items > 0 ? `${option.items} items available` : 'Contains additional results'"
+              :title="typeof option.items === 'number' && option.items > 0 ? `${option.items} items` : 'More results'"
+            >
+              {{ typeof option.items === "number" && option.items > 0 ? option.items : ">" }}
+            </span>
+          </li>
         </ul>
       </div>
       <p v-if="errorMessage" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ errorMessage }}</p>
-      <p v-if="selectedCountryDetails?.SupportsGeocoding" :style="{ margin: '0.35rem 0 0.25rem', color: '#6b7280', fontSize: '0.875rem' }">Or use your current location:</p>
+      <p
+        v-if="selectedCountryDetails?.SupportsGeocoding"
+        :style="{ margin: '0.35rem 0 0.25rem', color: '#6b7280', fontSize: '0.875rem' }"
+      >
+        Or use your current location:
+      </p>
       <button
         v-if="selectedCountryDetails?.SupportsGeocoding"
         type="button"
