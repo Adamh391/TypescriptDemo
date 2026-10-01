@@ -1,6 +1,7 @@
 import createClient from "openapi-fetch";
 import React, { useEffect, useRef, useState } from "react";
 import { PredictiveAddress } from "@data8/types";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 const API_KEY = import.meta.env.API_KEY;
 
@@ -13,16 +14,8 @@ type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddress
 type SupportedCountry = PredictiveAddress.components["schemas"]["PredictiveAddressCountryDetails"];
 let predictiveAddressSessionId: string | null = null;
 
-async function getSupportedCountries() {
-  const { data } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
-    headers: { "content-type": "application/json" },
-    body: { username: "apikey-" + API_KEY },
-  });
-  return data;
-}
-
 async function search(address: string, country: string, sessionId: string | null, signal?: AbortSignal) {
-  const { data } = await client.POST("/PredictiveAddress/Search.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/Search.json", {
     signal,
     headers: { "content-type": "application/json" },
     body: {
@@ -32,19 +25,35 @@ async function search(address: string, country: string, sessionId: string | null
       session: sessionId ?? undefined,
     },
   });
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address search failed");
+  }
+  
   return data;
 }
 
 async function drilldown(id: string, country: string) {
-  const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/DrillDown.json", {
     headers: { "content-type": "application/json" },
     body: { username: "apikey-" + API_KEY, country, id },
   });
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address drilldown failed");
+  }
+  
   return data;
 }
 
 async function retrieve(id: string, country: string) {
-  const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
@@ -59,6 +68,26 @@ async function retrieve(id: string, country: string) {
       },
     },
   });
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address retrieve failed");
+  }
+  
+  return data;
+}
+
+async function getSupportedCountries() {
+  const { data, error } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
+    headers: { "content-type": "application/json" },
+    body: { username: "apikey-" + API_KEY },
+  });
+  if (error) throw error;
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Loading countries failed");
+  }
   return data;
 }
 
@@ -71,8 +100,8 @@ export default function PredictiveAddressPage() {
   const [countries, setCountries] = useState<SupportedCountry[]>([]);
   const [selectedCountry, setSelectedCountry] = useState("GB");
   const [isLocating, setIsLocating] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(predictiveAddressSessionId);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const activeSearchController = useRef<AbortController | null>(null);
   const resultsContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,8 +111,9 @@ export default function PredictiveAddressPage() {
     predictiveAddressSessionId = nextSessionId;
   }
 
-  useEffect(() => {
-    getSupportedCountries().then((res) => {
+useEffect(() => {
+  getSupportedCountries()
+    .then((res) => {
       const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
       setCountries(supported);
 
@@ -91,8 +121,11 @@ export default function PredictiveAddressPage() {
         ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
         ?? "GB";
       setSelectedCountry(defaultCountry);
+    })
+    .catch((err) => {
+      setErrorMessage(getErrorMessage(err, "Error loading predictive address supported countries"));
     });
-  }, []);
+}, []);
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -110,6 +143,7 @@ export default function PredictiveAddressPage() {
   }, []);
 
   useEffect(() => {
+    setErrorMessage(null);
     activeSearchController.current?.abort();
 
     const query = searchQuery ?? address;
@@ -130,9 +164,12 @@ export default function PredictiveAddressPage() {
         setOptions(res?.Results ?? []);
         setIsResultsOpen(true);
       })
-      .catch((error: unknown) => {
+      .catch((error: any) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
-        throw error;
+        if (controller.signal.aborted) return;
+        setErrorMessage(getErrorMessage(error, "Error searching predictive address"));
+        setOptions([]);
+        setIsResultsOpen(false);
       });
 
     return () => {
@@ -147,18 +184,18 @@ export default function PredictiveAddressPage() {
     setOptions([]);
     setIsResultsOpen(false);
     setSelected(null);
-    setLocationError(null);
     setSearchQuery(null);
+    setErrorMessage(null);
   }
 
   function handleUseCurrentLocation() {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by this browser.");
+      setErrorMessage("Geolocation is not supported by this browser.");
       return;
     }
 
     setIsLocating(true);
-    setLocationError(null);
+    setErrorMessage(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -170,13 +207,15 @@ export default function PredictiveAddressPage() {
         setIsLocating(false);
       },
       (error) => {
-        setLocationError(error.message || "Unable to retrieve your location.");
+        setErrorMessage(error.message || "Unable to retrieve your location.");
         setIsLocating(false);
       }
     );
   }
 
-  async function handleSelect(option: SearchResults[number]) {
+async function handleSelect(option: SearchResults[number]) {
+  setErrorMessage(null);
+  try {
     if (option.container) {
       const res = await drilldown(option.value ?? "", selectedCountry);
       updateSessionId(res?.SessionID);
@@ -188,7 +227,10 @@ export default function PredictiveAddressPage() {
       setOptions([]);
       setIsResultsOpen(false);
     }
+  } catch (err) {
+    setErrorMessage(getErrorMessage(err, "Error loading the selected address"));
   }
+}
 
   const raw = selected?.Result?.RawAddress;
   const formattedLines = selected?.Result?.Address?.Lines ?? [];
@@ -287,7 +329,7 @@ export default function PredictiveAddressPage() {
             {isLocating ? "Getting current location..." : "Use Current Location"}
           </button>
         )}
-        {locationError && <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.5rem" }}>{locationError}</p>}
+        {errorMessage && <p style={{ color: "#b42318", marginTop: 0, marginBottom: "0.5rem" }}>{errorMessage}</p>}
       </div>
       <div aria-hidden="true" style={{ margin: "1rem 0", borderTop: "2px solid #d1d5db" }} />
       <input disabled placeholder="Organisation" value={raw?.Organisation ?? ""} style={{ marginTop: "1rem" }} />

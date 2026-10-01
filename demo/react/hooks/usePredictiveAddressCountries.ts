@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import createClient from "openapi-fetch";
 import { PredictiveAddress } from "@data8/types";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 export type SupportedCountryDetails = PredictiveAddress.components["schemas"]["PredictiveAddressCountryDetails"];
 const DEFAULT_APPLICATION_NAME = "@data8/react-predictiveaddress";
@@ -36,7 +37,7 @@ export function usePredictiveAddressCountries(
       setError(null);
 
       try {
-        const { data } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
+        const { data, error } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
           headers: { "content-type": "application/json" },
           body: {
             username: "apikey-" + apiKey,
@@ -45,6 +46,10 @@ export function usePredictiveAddressCountries(
             },
           },
         });
+        if (error) throw error;
+        if (!data?.Status?.Success) {
+          throw new Error(data?.Status?.ErrorMessage ?? "Loading supported countries failed");
+        }
 
         if (!isActive) return;
 
@@ -54,11 +59,11 @@ export function usePredictiveAddressCountries(
 
         setCountries(supported);
         setCurrentCountryIso2(data?.CurrentCountry?.ISO2 ?? null);
-      } catch {
+      } catch (err) {
         if (!isActive) return;
         setCountries([]);
         setCurrentCountryIso2(null);
-        setError("Unable to load supported countries.");
+        setError(getErrorMessage(err, "Unable to load supported countries."));
       } finally {
         if (isActive) {
           setIsLoading(false);

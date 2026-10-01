@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { EmailValidation } from "@data8/types";
 import createClient from "openapi-fetch";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 const API_KEY = import.meta.env.API_KEY;
 
@@ -39,7 +40,14 @@ async function validateEmail(email: string, fullName: string) {
     },
   });
 
-  if (error) throw new Error(JSON.stringify(error));
+  if (error) {
+    throw new Error(getErrorMessage(error, "Email validation request failed"));
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Email validation failed");
+  }
+
   return data;
 }
 

@@ -1,6 +1,7 @@
 import createClient from "openapi-fetch";
 import React, { forwardRef, useEffect, useId, useRef, useState } from "react";
 import { PredictiveAddress } from "@data8/types";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 type SearchResults = NonNullable<PredictiveAddress.components["schemas"]["PredictiveAddressSearchResponse"]["Results"]>;
 type RetrieveResult = PredictiveAddress.components["schemas"]["PredictiveAddressRetrieveResponse"];
@@ -26,8 +27,8 @@ export interface PredictiveAddressInputSlots {
   optionHover?: React.LiHTMLAttributes<HTMLLIElement>;
   /** Props merged onto the embedded current-location button. */
   currentLocationButton?: React.ButtonHTMLAttributes<HTMLButtonElement>;
-  /** Props merged onto the location error message. */
-  locationError?: React.HTMLAttributes<HTMLParagraphElement>;
+  /** Props merged onto the inline error message. */
+  errorMessage?: React.HTMLAttributes<HTMLParagraphElement>;
 }
 
 /**
@@ -76,7 +77,7 @@ async function search(
   applicationName: string,
   signal?: AbortSignal
 ) {
-  const { data } = await client.POST("/PredictiveAddress/Search.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/Search.json", {
     signal,
     headers: { "content-type": "application/json" },
     body: {
@@ -89,11 +90,15 @@ async function search(
       },
     },
   });
+  if (error) throw error;
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address search failed");
+  }
   return data;
 }
 
 async function drilldown(id: string, apiKey: string, country: string, applicationName: string) {
-  const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/DrillDown.json", {
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + apiKey,
@@ -104,6 +109,10 @@ async function drilldown(id: string, apiKey: string, country: string, applicatio
       },
     },
   });
+  if (error) throw error;
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address drilldown failed");
+  }
   return data;
 }
 
@@ -114,7 +123,7 @@ async function retrieve(
   applicationName: string,
   retrieveOptions?: PredictiveAddressRetrieveOptions
 ) {
-  const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + apiKey,
@@ -126,6 +135,10 @@ async function retrieve(
       },
     },
   });
+  if (error) throw error;
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address retrieve failed");
+  }
   return data;
 }
 
@@ -174,10 +187,11 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
     const [highlightedOptionIndex, setHighlightedOptionIndex] = useState<number | null>(null);
     const [resolvedSupportsGeocoding, setResolvedSupportsGeocoding] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
-    const [locationError, setLocationError] = useState<string | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const sessionIdRef = useRef<string | null>(null);
     const suppressNextSearchRef = useRef(false);
     const activeSearchController = useRef<AbortController | null>(null);
+    const interactionRequestId = useRef(0);
     const resultsContainerRef = useRef<HTMLDivElement | null>(null);
     const listboxRef = useRef<HTMLUListElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
@@ -192,7 +206,7 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
     const optionSlotProps = slots?.option ?? {};
     const optionHoverSlotProps = slots?.optionHover ?? {};
     const currentLocationButtonSlotProps = slots?.currentLocationButton ?? {};
-    const locationErrorSlotProps = slots?.locationError ?? {};
+    const errorMessageSlotProps = slots?.errorMessage ?? {};
     const canUseCurrentLocation = supportsGeocoding ?? resolvedSupportsGeocoding;
 
     useEffect(() => {
@@ -202,26 +216,32 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
 
       let isActive = true;
 
-      client.POST("/PredictiveAddress/GetSupportedCountries.json", {
-        headers: { "content-type": "application/json" },
-        body: {
-          username: "apikey-" + apiKey,
-          options: {
-            ApplicationName: applicationName,
-          },
-        },
-      })
-        .then((res) => {
+      void (async () => {
+        try {
+          const { data, error } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
+            headers: { "content-type": "application/json" },
+            body: {
+              username: "apikey-" + apiKey,
+              options: {
+                ApplicationName: applicationName,
+              },
+            },
+          });
+          if (error) throw error;
+          if (!data?.Status?.Success) {
+            throw new Error(data?.Status?.ErrorMessage ?? "Loading supported countries failed");
+          }
           if (!isActive) return;
 
-          const supported = (res.data?.Countries ?? []).filter((item) => item.ISO2 && item.SupportsGeocoding);
+          const supported = (data?.Countries ?? []).filter((item) => item.ISO2 && item.SupportsGeocoding);
           setResolvedSupportsGeocoding(supported.some((item) => item.ISO2 === country));
-        })
-        .catch(() => {
+        } catch (error) {
           if (isActive) {
             setResolvedSupportsGeocoding(false);
+            setErrorMessage(getErrorMessage(error, "Error loading supported countries"));
           }
-        });
+        }
+      })();
 
       return () => {
         isActive = false;
@@ -234,7 +254,9 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
       setHighlightedOptionIndex(null);
       sessionIdRef.current = null;
       setSearchQuery(null);
-      setLocationError(null);
+      setErrorMessage(null);
+      setIsLocating(false);
+      interactionRequestId.current += 1;
       activeSearchController.current?.abort();
     }, [country, apiKey]);
 
@@ -255,6 +277,7 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
     }, []);
 
     useEffect(() => {
+      setErrorMessage(null);
       if (suppressNextSearchRef.current) {
         suppressNextSearchRef.current = false;
         return;
@@ -283,7 +306,10 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
           })
           .catch((error: unknown) => {
             if (error instanceof DOMException && error.name === "AbortError") return;
-            throw error;
+            if (controller.signal.aborted) return;
+            setErrorMessage(getErrorMessage(error, "Error searching predictive address"));
+            setOptions([]);
+            setIsResultsOpen(false);
           });
       }, 250);
 
@@ -297,20 +323,22 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
     }, [activeQuery, apiKey, applicationName, country, disabled]);
 
     function handleUseCurrentLocation() {
+      const requestId = ++interactionRequestId.current;
       // Keep keyboard interaction anchored to the textbox so arrow keys
       // control the listbox instead of scrolling the page.
       inputRef.current?.focus();
 
       if (!navigator.geolocation) {
-        setLocationError("Geolocation is not supported by this browser.");
+        setErrorMessage("Geolocation is not supported by this browser.");
         return;
       }
 
       setIsLocating(true);
-      setLocationError(null);
+      setErrorMessage(null);
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
+          if (requestId !== interactionRequestId.current) return;
           const latitude = position.coords.latitude.toFixed(6);
           const longitude = position.coords.longitude.toFixed(6);
           setSearchQuery(`${latitude}, ${longitude}`);
@@ -319,23 +347,37 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
           setIsLocating(false);
         },
         (error) => {
-          setLocationError(error.message || "Unable to retrieve your location.");
+          if (requestId !== interactionRequestId.current) return;
+          setErrorMessage(error.message || "Unable to retrieve your location.");
           setIsLocating(false);
         }
       );
     }
 
     async function handleSelect(option: SearchResults[number]) {
-      if (option.container) {
-        const res = await drilldown(option.value ?? "", apiKey, country, applicationName);
-        sessionIdRef.current = res?.SessionID ?? null;
-        setOptions(res?.Results ?? []);
-        setHighlightedOptionIndex(null);
-        setIsResultsOpen((res?.Results?.length ?? 0) > 0);
+      const requestId = ++interactionRequestId.current;
+      setErrorMessage(null);
+      setIsLocating(false);
+      let res: RetrieveResult | null | undefined;
+      try {
+        if (option.container) {
+          const drilldownResult = await drilldown(option.value ?? "", apiKey, country, applicationName);
+          if (requestId !== interactionRequestId.current) return;
+          sessionIdRef.current = drilldownResult?.SessionID ?? null;
+          setOptions(drilldownResult?.Results ?? []);
+          setHighlightedOptionIndex(null);
+          setIsResultsOpen((drilldownResult?.Results?.length ?? 0) > 0);
+          return;
+        }
+
+        res = await retrieve(option.value ?? "", apiKey, country, applicationName, retrieveOptions);
+      } catch (error) {
+        if (requestId === interactionRequestId.current) {
+          setErrorMessage(getErrorMessage(error, "Error loading the selected address"));
+        }
         return;
       }
-
-      const res = await retrieve(option.value ?? "", apiKey, country, applicationName, retrieveOptions);
+      if (requestId !== interactionRequestId.current) return;
       if (!res) {
         setOptions([]);
         setIsResultsOpen(false);
@@ -464,6 +506,9 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
             if (value === undefined) {
               setInternalValue(event.target.value);
             }
+            interactionRequestId.current += 1;
+            setIsLocating(false);
+            setErrorMessage(null);
             setSearchQuery(null);
             setIsResultsOpen(true);
             onChange?.(event);
@@ -570,17 +615,17 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
           </ul>
         )}
         </div>
-        {locationError && (
+        {errorMessage && (
           <p
-            {...locationErrorSlotProps}
+            {...errorMessageSlotProps}
             style={{
               margin: "0.35rem 0 0",
               color: "#b42318",
               fontSize: "0.875rem",
-              ...locationErrorSlotProps.style,
+              ...errorMessageSlotProps.style,
             }}
           >
-            {locationError}
+            {errorMessage}
           </p>
         )}
       </div>

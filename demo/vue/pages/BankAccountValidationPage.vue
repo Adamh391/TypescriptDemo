@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import createClient from "openapi-fetch";
 import { BankAccountValidation } from "@data8/types";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 const API_KEY = import.meta.env.API_KEY;
 
@@ -93,8 +94,15 @@ async function handleSubmit() {
       },
     });
 
-    if (apiError) throw new Error(JSON.stringify(apiError));
-    result.value = data ?? null;
+    if (apiError) {
+      throw new Error(getErrorMessage(apiError, "Bank account validation request failed"));
+    }
+
+    if (!data?.Status?.Success) {
+      throw new Error(data?.Status?.ErrorMessage ?? "Bank account validation failed");
+    }
+
+    result.value = data;
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Validation failed";
   } finally {

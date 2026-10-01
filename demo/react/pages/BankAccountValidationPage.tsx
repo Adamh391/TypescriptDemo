@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { BankAccountValidation } from "@data8/types";
 import createClient from "openapi-fetch";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 const API_KEY = import.meta.env.API_KEY;
 
@@ -13,7 +14,14 @@ async function validateBankDetails(sortCode: string, accountNumber: string) {
     headers: { "content-type": "application/json" },
     body: { username: "apikey-" + API_KEY, bankAccountNumber: accountNumber, sortCode},
   });
-  if (error) throw new Error(JSON.stringify(error));
+  if (error) {
+    throw new Error(getErrorMessage(error, "Bank account validation request failed"));
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Bank account validation failed");
+  }
+  
   return data;
 }
 

@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import createClient from "openapi-fetch";
 import { PredictiveAddress } from "@data8/types";
+import { getErrorMessage } from "../../helpers/ApiError";
 
 const API_KEY = import.meta.env.API_KEY;
 
@@ -23,16 +24,26 @@ const countries = ref<SupportedCountry[]>([]);
 const selectedCountry = ref("GB");
 const isLocating = ref(false);
 const locationError = ref<string | null>(null);
+const errorMessage = ref<string | null>(null);
 const isResultsOpen = ref(false);
 const sessionId = ref<string | null>(predictiveAddressSessionId);
 const selectedCountryDetails = computed(() => countries.value.find((country) => country.ISO2 === selectedCountry.value));
 const resultsContainerRef = ref<HTMLElement | null>(null);
 
 async function getSupportedCountries() {
-  const { data } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/GetSupportedCountries.json", {
     headers: { "content-type": "application/json" },
     body: { username: "apikey-" + API_KEY },
   });
+
+  if (error) {
+    throw new Error(getErrorMessage(error, "Error loading predictive address supported countries"));
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Loading countries failed");
+  }
+
   return data;
 }
 
@@ -46,7 +57,7 @@ function handleDocumentPointerDown(event: PointerEvent) {
 }
 
 async function search(address: string, country: string, sessionId: string | null, signal?: AbortSignal) {
-  const { data } = await client.POST("/PredictiveAddress/Search.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/Search.json", {
     signal,
     headers: { "content-type": "application/json" },
     body: {
@@ -56,19 +67,37 @@ async function search(address: string, country: string, sessionId: string | null
       session: sessionId ?? undefined,
     },
   });
+
+  if (error) {
+    throw new Error(getErrorMessage(error, "Error searching predictive address"));
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address search failed");
+  }
+
   return data;
 }
 
 async function drilldown(id: string, country: string) {
-  const { data } = await client.POST("/PredictiveAddress/DrillDown.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/DrillDown.json", {
     headers: { "content-type": "application/json" },
     body: { username: "apikey-" + API_KEY, country, id },
   });
+
+  if (error) {
+    throw new Error(getErrorMessage(error, "Error loading the selected address"));
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address drilldown failed");
+  }
+
   return data;
 }
 
 async function retrieve(id: string, country: string) {
-  const { data } = await client.POST("/PredictiveAddress/Retrieve.json", {
+  const { data, error } = await client.POST("/PredictiveAddress/Retrieve.json", {
     headers: { "content-type": "application/json" },
     body: {
       username: "apikey-" + API_KEY,
@@ -83,6 +112,15 @@ async function retrieve(id: string, country: string) {
       },
     },
   });
+
+  if (error) {
+    throw new Error(getErrorMessage(error, "Error loading the selected address"));
+  }
+
+  if (!data?.Status?.Success) {
+    throw new Error(data?.Status?.ErrorMessage ?? "Predictive address retrieve failed");
+  }
+
   return data;
 }
 
@@ -93,15 +131,20 @@ function updateSessionId(nextSessionId: string | null | undefined) {
 }
 
 onMounted(async () => {
-  const res = await getSupportedCountries();
-  const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
-  countries.value = supported;
-
-  selectedCountry.value = res?.CurrentCountry?.ISO2
-    ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
-    ?? "GB";
-
   window.addEventListener("pointerdown", handleDocumentPointerDown);
+  errorMessage.value = null;
+
+  try {
+    const res = await getSupportedCountries();
+    const supported = (res?.Countries ?? []).filter((country) => country.ISO2 && country.Name) as SupportedCountry[];
+    countries.value = supported;
+
+    selectedCountry.value = res?.CurrentCountry?.ISO2
+      ?? (supported.some((country) => country.ISO2 === "GB") ? "GB" : supported[0]?.ISO2)
+      ?? "GB";
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "Error loading predictive address supported countries");
+  }
 });
 
 onBeforeUnmount(() => {
@@ -138,6 +181,7 @@ function handleUseCurrentLocation() {
 }
 
 watch([address, searchQuery, selectedCountry], async ([val, query, country], _, onCleanup) => {
+  errorMessage.value = null;
   activeSearchAbortController?.abort();
 
   const activeQuery = query ?? val;
@@ -166,7 +210,10 @@ watch([address, searchQuery, selectedCountry], async ([val, query, country], _, 
     isResultsOpen.value = true;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") return;
-    throw error;
+    if (controller.signal.aborted) return;
+    errorMessage.value = getErrorMessage(error, "Error searching predictive address");
+    options.value = [];
+    isResultsOpen.value = false;
   } finally {
     if (activeSearchAbortController === controller) {
       activeSearchAbortController = null;
@@ -181,20 +228,27 @@ watch(selectedCountry, () => {
   isResultsOpen.value = false;
   selected.value = null;
   locationError.value = null;
+  errorMessage.value = null;
   searchQuery.value = null;
 });
 
 async function handleSelect(option: SearchResults[number]) {
-  if (option.container) {
-    const res = await drilldown(option.value ?? "", selectedCountry.value);
-    updateSessionId(res?.SessionID);
-    options.value = res?.Results ?? [];
-    isResultsOpen.value = true;
-  } else {
-    const res = await retrieve(option.value ?? "", selectedCountry.value);
-    selected.value = res ?? null;
-    options.value = [];
-    isResultsOpen.value = false;
+  errorMessage.value = null;
+
+  try {
+    if (option.container) {
+      const res = await drilldown(option.value ?? "", selectedCountry.value);
+      updateSessionId(res?.SessionID);
+      options.value = res?.Results ?? [];
+      isResultsOpen.value = true;
+    } else {
+      const res = await retrieve(option.value ?? "", selectedCountry.value);
+      selected.value = res ?? null;
+      options.value = [];
+      isResultsOpen.value = false;
+    }
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error, "Error loading the selected address");
   }
 }
 
@@ -276,6 +330,7 @@ watch(selected, (val) => {
         </li>
         </ul>
       </div>
+      <p v-if="errorMessage" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ errorMessage }}</p>
       <p v-if="selectedCountryDetails?.SupportsGeocoding" :style="{ margin: '0.35rem 0 0.25rem', color: '#6b7280', fontSize: '0.875rem' }">Or use your current location:</p>
       <button
         v-if="selectedCountryDetails?.SupportsGeocoding"
