@@ -33,7 +33,7 @@ function MissingApiKeyMessage() {
 const tabs = [
   { id: "email", label: "Email Validation", component: EmailValidationPage },
   { id: "address", label: "Predictive Address", component: PredictiveAddressPage },
-  { id: "address-host", label: "Address Input Host", component: PredictiveAddressHostPage },
+  { id: "address-host", label: "Predictive Address Component", component: PredictiveAddressHostPage },
   { id: "bank", label: "Bank Account Validation", component: BankAccountValidationPage },
   { id: "phone", label: "Phone Validation", component: PhoneValidationPage },
 ] as const;
@@ -44,7 +44,7 @@ function App() {
 
   return (
     <main className="container" style={{ maxWidth: "600px", marginTop: "2rem" }}>
-      <h1>Data8 Services</h1>
+      <h1>Data8 Services (React)</h1>
       <nav>
         <ul>
           {tabs.map((tab) => (

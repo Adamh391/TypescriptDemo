@@ -9,7 +9,7 @@ import PhoneValidationPage from "./pages/PhoneValidationPage.vue";
 const tabs = [
   { id: "email", label: "Email Validation" },
   { id: "address", label: "Predictive Address" },
-  { id: "address-input", label: "Predictive Address Input" },
+  { id: "address-input", label: "Predictive Address Component" },
   { id: "bank", label: "Bank Account Validation" },
   { id: "phone", label: "Phone Validation" },
 ] as const;
