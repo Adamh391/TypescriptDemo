@@ -430,9 +430,9 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
               width: "1.8rem",
               height: "1.8rem",
               borderRadius: "999px",
-              border: "1px solid #cbd5e1",
-              background: "#fff",
-              color: "#1f2937",
+              border: "1px solid var(--data8-border)",
+              background: "var(--data8-white)",
+              color: "var(--data8-ink)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -529,9 +529,9 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
               margin: 0,
               padding: 0,
               listStyle: "none",
-              border: "1px solid #ccc",
+              border: "1px solid var(--data8-border)",
               borderRadius: "0 0 4px 4px",
-              background: "#fff",
+              background: "var(--data8-white)",
               maxHeight: "250px",
               overflowY: "auto",
               boxShadow: "0 12px 30px rgba(15, 23, 42, 0.12)",
@@ -553,7 +553,7 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
                 style={{
                   padding: "0.5rem",
                   cursor: "pointer",
-                  borderBottom: "1px solid #eee",
+                  borderBottom: "1px solid var(--data8-border)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -620,7 +620,7 @@ export const PredictiveAddressInput = forwardRef<HTMLInputElement, PredictiveAdd
             {...errorMessageSlotProps}
             style={{
               margin: "0.35rem 0 0",
-              color: "#b42318",
+              color: "var(--data8-invalid)",
               fontSize: "0.875rem",
               ...errorMessageSlotProps.style,
             }}

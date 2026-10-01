@@ -18,9 +18,14 @@ const activeTab = ref<string>("email");
 </script>
 
 <template>
-  <main class="container" style="max-width: 600px; margin-top: 2rem">
-    <h1>Data8 Services (Vue)</h1>
-    <nav>
+  <main class="container demo-shell">
+    <header class="demo-header">
+      <div>
+        <h1 class="demo-brand-title">Data<span>8</span></h1>
+        <p class="demo-brand-subtitle">Vue demonstration</p>
+      </div>
+    </header>
+    <nav class="service-tabs" aria-label="Data8 services">
       <ul>
         <li v-for="tab in tabs" :key="tab.id">
           <a
@@ -33,10 +38,12 @@ const activeTab = ref<string>("email");
         </li>
       </ul>
     </nav>
-    <EmailValidationPage v-if="activeTab === 'email'" />
-    <PredictiveAddressPage v-if="activeTab === 'address'" />
-    <PredictiveAddressHostPage v-if="activeTab === 'address-input'" />
-    <BankAccountValidationPage v-if="activeTab === 'bank'" />
-    <PhoneValidationPage v-if="activeTab === 'phone'" />
+    <section class="demo-content">
+      <EmailValidationPage v-if="activeTab === 'email'" />
+      <PredictiveAddressPage v-if="activeTab === 'address'" />
+      <PredictiveAddressHostPage v-if="activeTab === 'address-input'" />
+      <BankAccountValidationPage v-if="activeTab === 'bank'" />
+      <PhoneValidationPage v-if="activeTab === 'phone'" />
+    </section>
   </main>
 </template>

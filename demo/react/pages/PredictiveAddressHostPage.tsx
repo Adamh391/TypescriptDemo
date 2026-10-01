@@ -34,7 +34,7 @@ const INPUT_SLOTS = {
   dropdown: {
     style: {
       borderRadius: "12px",
-      border: "1px solid #94a3b8",
+      border: "1px solid var(--data8-border)",
     },
   },
   option: {
@@ -111,9 +111,9 @@ export default function PredictiveAddressHostPage() {
       <div
         style={{
           padding: "1rem",
-          border: "1px solid #d6dbe3",
+          border: "1px solid var(--data8-border)",
           borderRadius: "14px",
-          background: "linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%)",
+          background: "var(--data8-white)",
           boxShadow: "0 16px 45px rgba(15, 23, 42, 0.06)",
         }}
       >
@@ -133,7 +133,7 @@ export default function PredictiveAddressHostPage() {
             </select>
           </label>
 
-          {error && <p style={{ margin: 0, color: "#b42318" }}>{error}</p>}
+          {error && <p style={{ margin: 0, color: "var(--data8-invalid)" }}>{error}</p>}
 
           <div style={{ display: "grid", gap: "0.35rem" }}>
             <span style={{ fontWeight: 600 }}>Address line 1</span>

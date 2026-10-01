@@ -5,28 +5,43 @@ import PredictiveAddressPage from "./pages/PredictiveAddressPage";
 import PredictiveAddressHostPage from "./pages/PredictiveAddressHostPage";
 import BankAccountValidationPage from "./pages/BankAccountValidationPage";
 import PhoneValidationPage from "./pages/PhoneValidationPage";
+import "../helpers/data8-theme.css";
 
 const API_KEY = import.meta.env.API_KEY;
 
 function MissingApiKeyMessage() {
   return (
-    <main className="container" style={{ maxWidth: "760px", marginTop: "2rem" }}>
-      <h1 style={{ color: "#b42318" }}>Missing API_KEY environment variable</h1>
-      <p>
-        This demo requires an API key in <code>API_KEY</code> before it can call Data8 services.
-      </p>
-      <p>
-        Add <code>API_KEY=your-key-here</code> to a <code>.env</code> file in the project root,
-        then restart the dev server.
-      </p>
-      <p>
-        If you do not have a key yet, create one at{" "}
-        <a href="https://portal.data-8.co.uk/development/api-keys" target="_blank" rel="noreferrer">
-          https://portal.data-8.co.uk/development/api-keys
-        </a>
-        .
-      </p>
+    <main className="container demo-shell">
+      <DemoHeader framework="React" />
+      <section className="demo-content">
+        <h2 className="message--warning">Missing API_KEY environment variable</h2>
+        <p>
+          This demo requires an API key in <code>API_KEY</code> before it can call Data8 services.
+        </p>
+        <p>
+          Add <code>API_KEY=your-key-here</code> to a <code>.env</code> file in the project root,
+          then restart the dev server.
+        </p>
+        <p>
+          If you do not have a key yet, create one at{" "}
+          <a href="https://portal.data-8.co.uk/development/api-keys" target="_blank" rel="noreferrer">
+            https://portal.data-8.co.uk/development/api-keys
+          </a>
+          .
+        </p>
+      </section>
     </main>
+  );
+}
+
+function DemoHeader({ framework }: { framework: string }) {
+  return (
+    <header className="demo-header">
+      <div>
+        <h1 className="demo-brand-title">Data<span>8</span></h1>
+        <p className="demo-brand-subtitle">{framework} demonstration</p>
+      </div>
+    </header>
   );
 }
 
@@ -43,9 +58,9 @@ function App() {
   const ActiveComponent = tabs.find((t) => t.id === activeTab)!.component;
 
   return (
-    <main className="container" style={{ maxWidth: "600px", marginTop: "2rem" }}>
-      <h1>Data8 Services (React)</h1>
-      <nav>
+    <main className="container demo-shell">
+      <DemoHeader framework="React" />
+      <nav className="service-tabs" aria-label="Data8 services">
         <ul>
           {tabs.map((tab) => (
             <li key={tab.id}>
@@ -60,7 +75,7 @@ function App() {
           ))}
         </ul>
       </nav>
-      <section style={{ marginTop: "1.5rem" }}>
+      <section className="demo-content">
         <ActiveComponent />
       </section>
     </main>

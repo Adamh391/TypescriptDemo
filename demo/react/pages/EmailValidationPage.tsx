@@ -120,11 +120,11 @@ function ResultCard({ result }: { result: ValidationResult }) {
     <article
       style={{
         marginTop: "1.5rem",
-        borderLeft: `4px solid ${isValid ? "#2ecc40" : "#ff4136"}`,
+        borderLeft: `4px solid ${isValid ? "var(--data8-valid)" : "var(--data8-invalid)"}`,
         paddingLeft: "1rem",
       }}
     >
-      <h3 style={{ color: isValid ? "#2ecc40" : "#ff4136", margin: "0 0 0.5rem" }}>
+      <h3 style={{ color: isValid ? "var(--data8-valid)" : "var(--data8-invalid)", margin: "0 0 0.5rem" }}>
         {isValid ? "✓ Valid" : "✗ Invalid"}
       </h3>
       <p style={{ margin: 0, color: "#555" }}>{result.Result}</p>
@@ -201,7 +201,7 @@ export default function EmailValidationPage() {
         </div>
       </form>
 
-      {error && <p style={{ color: "#ff4136" }}>{error}</p>}
+      {error && <p style={{ color: "var(--data8-invalid)" }}>{error}</p>}
       {result && <ResultCard result={result} />}
     </div>
   );

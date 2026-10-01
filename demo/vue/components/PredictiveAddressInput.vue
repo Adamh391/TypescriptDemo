@@ -460,9 +460,9 @@ onBeforeUnmount(() => {
   padding: 0;
   margin: 0;
   border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #1f2937;
+  border: 1px solid var(--data8-border);
+  background: var(--data8-white);
+  color: var(--data8-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -479,10 +479,10 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 0;
   list-style: none;
-  border: 1px solid #ccc;
+  border: 1px solid var(--data8-border);
   border-radius: 0 0 4px 4px;
-  background: #fff;
-  color: #1f2937;
+  background: var(--data8-white);
+  color: var(--data8-ink);
   max-height: 250px;
   overflow-y: auto;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
@@ -492,7 +492,7 @@ onBeforeUnmount(() => {
   padding: 0.5rem;
   list-style: none;
   cursor: pointer;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--data8-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -516,5 +516,5 @@ onBeforeUnmount(() => {
   font-weight: 700;
   flex-shrink: 0;
 }
-.address-error { margin: 0.35rem 0 0; color: #b42318; font-size: 0.875rem; }
+.address-error { margin: 0.35rem 0 0; color: var(--data8-invalid); font-size: 0.875rem; }
 </style>

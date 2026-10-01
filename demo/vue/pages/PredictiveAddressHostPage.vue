@@ -22,7 +22,7 @@ const RETRIEVE_OPTIONS: PredictiveAddressRetrieveOptions = {
 const EMPTY_FIELDS = { line1: "", line2: "", line3: "", town: "", county: "", postcode: "" };
 const INPUT_SLOTS: PredictiveAddressInputSlots = {
   root: { style: { fontFamily: "inherit" } },
-  dropdown: { style: { borderRadius: "8px", border: "1px solid #94a3b8" } },
+  dropdown: { style: { borderRadius: "8px", border: "1px solid var(--data8-border)" } },
   option: { style: { padding: "0.65rem 0.8rem" } },
   currentLocationButton: { style: { background: "#eff6ff", borderColor: "#60a5fa", color: "#1d4ed8" } },
 };
@@ -164,6 +164,6 @@ select {
 
 .countries-error {
   margin: 0;
-  color: #b42318;
+  color: var(--data8-invalid);
 }
 </style>

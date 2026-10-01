@@ -295,9 +295,9 @@ watch(selected, (val) => {
             margin: 0,
             padding: 0,
             listStyle: 'none',
-            border: '1px solid #ccc',
+            border: '1px solid var(--data8-border)',
             borderRadius: '0 0 4px 4px',
-            background: '#fff',
+            background: 'var(--data8-white)',
             maxHeight: '250px',
             overflowY: 'auto',
             boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
@@ -309,7 +309,7 @@ watch(selected, (val) => {
             :style="{
               padding: '0.5rem',
               cursor: 'pointer',
-              borderBottom: '1px solid #eee',
+              borderBottom: '1px solid var(--data8-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -345,7 +345,7 @@ watch(selected, (val) => {
           </li>
         </ul>
       </div>
-      <p v-if="errorMessage" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ errorMessage }}</p>
+      <p v-if="errorMessage" :style="{ color: 'var(--data8-invalid)', marginTop: 0, marginBottom: '0.5rem' }">{{ errorMessage }}</p>
       <p
         v-if="selectedCountryDetails?.SupportsGeocoding"
         :style="{ margin: '0.35rem 0 0.25rem', color: '#6b7280', fontSize: '0.875rem' }"
@@ -364,16 +364,16 @@ watch(selected, (val) => {
           padding: '0.35rem 0.65rem',
           fontSize: '0.875rem',
           background: 'transparent',
-          color: '#1f2937',
-          border: '1px solid #cbd5e1',
+          color: 'var(--data8-ink)',
+          border: '1px solid var(--data8-border)',
           boxShadow: 'none',
         }"
       >
         {{ isLocating ? "Getting current location..." : "Use Current Location" }}
       </button>
-      <p v-if="locationError" :style="{ color: '#b42318', marginTop: 0, marginBottom: '0.5rem' }">{{ locationError }}</p>
+      <p v-if="locationError" :style="{ color: 'var(--data8-invalid)', marginTop: 0, marginBottom: '0.5rem' }">{{ locationError }}</p>
     </div>
-    <div aria-hidden="true" :style="{ margin: '1rem 0', borderTop: '2px solid #d1d5db' }" />
+    <div aria-hidden="true" :style="{ margin: '1rem 0', borderTop: '2px solid var(--data8-border)' }" />
     <input disabled placeholder="Organisation" :value="raw?.RawAddress?.Organisation ?? ''" style="margin-top: 1rem" />
     <input disabled placeholder="Address Line 1" :value="formattedLines[0] ?? ''" />
     <input disabled placeholder="Address Line 2" :value="formattedLines[1] ?? ''" />

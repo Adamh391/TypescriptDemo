@@ -157,17 +157,17 @@ async function handleSubmit() {
       </div>
     </form>
 
-    <p v-if="error" style="color: #ff4136">{{ error }}</p>
+    <p v-if="error" style="color: var(--data8-invalid)">{{ error }}</p>
 
     <article
       v-if="result"
       :style="{
         marginTop: '1.5rem',
-        borderLeft: `4px solid ${result.Result === 'Valid' ? '#2ecc40' : '#ff4136'}`,
+        borderLeft: `4px solid ${result.Result === 'Valid' ? 'var(--data8-valid)' : 'var(--data8-invalid)'}`,
         paddingLeft: '1rem',
       }"
     >
-      <h3 :style="{ color: result.Result === 'Valid' ? '#2ecc40' : '#ff4136', margin: '0 0 0.5rem' }">
+      <h3 :style="{ color: result.Result === 'Valid' ? 'var(--data8-valid)' : 'var(--data8-invalid)', margin: '0 0 0.5rem' }">
         {{ result.Result === "Valid" ? "✓ Valid" : "✗ Invalid" }}
       </h3>
       <p style="margin: 0; color: #555">{{ result.Result }}</p>
